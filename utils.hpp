@@ -17,12 +17,12 @@ namespace Constants
 	constexpr int32_t ScreenHeight     = 720;
 	constexpr int32_t HalfScreenWidth  = ScreenWidth / 2;
 	constexpr int32_t HalfScreenHeight = ScreenHeight / 2;
-	constexpr int32_t CellSize         = 40;
+	constexpr int32_t CellSize         = 10;
 	constexpr size_t  GridWidth        = ScreenWidth / CellSize;
 	constexpr size_t  GridHeight       = ScreenHeight / CellSize;
 }
 
-template <typename T>
+template<typename T>
 using Array2D = std::vector<std::vector<T>>;
 
 inline float V2AngleBetween(const Vector2 &l, const Vector2 &r)

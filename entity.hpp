@@ -7,12 +7,16 @@
 
 #include <cstdint>
 #include "raylib.h"
+#include "utils.hpp"
 
 class Entity
 {
 public:
-	Entity(Vector2 pos = {0, 0}, float bodyRadius = 0, float perceptionRadius = 0) :
-			mPos(pos), mBodyRadius(bodyRadius), mPerceptionRadius(perceptionRadius) {}
+	constexpr static float DefaultBodySize = Constants::CellSize;
+
+public:
+	Entity(Vector2 pos = {0, 0}, float perceptionRadius = 0) :
+			mPos(pos), mPerceptionRadius(perceptionRadius) {}
 
 	virtual ~Entity();
 
@@ -22,14 +26,14 @@ public:
 	virtual void OnCollisionEnter(Entity &other) = 0;
 
 	const Vector2 &GetPos() const { return mPos; }
-	float GetBodyRadius() const { return mBodyRadius; }
-	float GetPerceptionRadius() const { return mPerceptionRadius; }
 
+	static float GetBodySize() { return DefaultBodySize; }
+	static float GetBodyRadius() { return DefaultBodySize / 2.f; }
+	float GetPerceptionRadius() const { return mPerceptionRadius; }
 
 protected:
 	Vector2 mPos;
 
-	float mBodyRadius;
 	float mPerceptionRadius;
 
 private:

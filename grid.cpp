@@ -20,60 +20,99 @@ Grid::Grid()
 
 void Grid::RegisterEntities(std::vector<std::shared_ptr<Entity>> &entities)
 {
+	ClearRegisteredEntites();
 	for ( auto &entity: entities )
 	{
-		float         radius      = entity->GetBodyRadius();
-		float         diameter    = radius * 2;
-		Vector2       position    = entity->GetPos();
-		const Vector2 positions[] = {{0,       0},
-		                             {radius,  0},
-		                             {0,       radius},
-		                             {radius,  radius},
-		                             {-radius, 0},
-		                             {0,       -radius},
-		                             {-radius, -radius},
-		                             {radius,  -radius},
-		                             {-radius, radius}};
+		const float bodyRadius = entity->GetBodyRadius();
+		int         radius     = 1;
 
-		for ( auto pos: positions )
+		Vector2 offset;
+		IntVec2 gridPos;
+		size_t  gridX, gridY;
+
+		for ( int y = -radius; y <= radius; ++y )
 		{
-			pos = Vector2Add(position, pos);
-			pos.x = floor(pos.x / diameter);
-			pos.y = floor(pos.y / diameter);
-
-			if ( pos.x < 0 )
+			for ( int x = -radius; x <= radius; ++x )
 			{
-				pos.x = Constants::GridWidth - 1;
-			}
-			else if ( pos.x >= Constants::GridWidth )
-			{
-				pos.x = 0;
-			}
+				offset  = {static_cast<float>(x) * bodyRadius, static_cast<float>(y) * bodyRadius};
+				gridPos = ToGridPosition(Vector2Add(entity->GetPos(), offset));
 
-			if ( pos.y < 0 )
-			{
-				pos.y = Constants::GridHeight - 1;
+				if ( gridPos.x < 0 )
+				{
+					gridPos.x = Constants::GridWidth - 1;
+				}
+				else if ( gridPos.x >= Constants::GridWidth )
+				{
+					gridPos.x = 0;
+				}
+
+				if ( gridPos.y < 0 )
+				{
+					gridPos.y = Constants::GridHeight - 1;
+				}
+				else if ( gridPos.y >= Constants::GridHeight )
+				{
+					gridPos.y = 0;
+				}
+
+				gridX = static_cast<size_t>(gridPos.x);
+				gridY = static_cast<size_t>(gridPos.y);
+
+				mGrid[gridY][gridX].push_back(entity.get());
 			}
-			else if ( pos.y >= Constants::GridHeight )
-			{
-				pos.y = 0;
-			}
-
-			auto x = static_cast<size_t>(pos.x), y = static_cast<size_t>(pos.y);
-			mGrid[y][x].push_back(entity.get());
-
-//			std::cout << x << " " << y << " REGISTERED " << entity.get() << "\n";
-
-//			Vector2 start = {pos.x * diameter, pos.y * diameter};
-//			DrawRectangleV(start, {diameter, diameter}, RED);
 		}
+
 	}
 }
-void Grid::CheckCollisions(size_t x, size_t y, size_t id)
+
+//void Grid::CheckCollisions(size_t id)
+//{
+//	auto entity = mGrid[y][x].at(id);
+//}
+
+void Grid::CheckCollisions(Vector2 pos, float radius)
 {
-	assert(!( y >= 0 && y < Constants::GridHeight ));
-	assert(!( x >= 0 && x < Constants::GridWidth ));
-	auto entity = mGrid[y][x].at(id);
+	IntVec2 gridPos = ToGridPosition(pos);
+
+	assert(( gridPos.y >= 0 && gridPos.y < Constants::GridHeight ));
+	assert(( gridPos.x >= 0 && gridPos.x < Constants::GridWidth ));
+
+	int gridRadius = 0;
+
+	for ( int y = -gridRadius; y <= gridRadius; ++y )
+	{
+		for ( int x = -gridRadius; x <= gridRadius; ++x )
+		{
+			int resX = gridPos.x + x;
+			int resY = gridPos.y + y;
+
+			if ( resX < 0 )
+			{
+				resX = Constants::GridWidth - 1;
+			}
+			else if ( resX >= Constants::GridWidth )
+			{
+				resX = 0;
+			}
+
+			if ( resY < 0 )
+			{
+				resY = Constants::GridHeight - 1;
+			}
+			else if ( resY >= Constants::GridHeight )
+			{
+				resY = 0;
+			}
+
+			for(auto &entity: mGrid[resY][resX])
+			{
+				if(entity == nullptr)
+					continue;
+
+				std::cout << "Collided" << "\n";
+			}
+		}
+	}
 }
 
 void Grid::Draw()
@@ -87,9 +126,38 @@ void Grid::Draw()
 				continue;
 			}
 
-			float   diameter = Constants::CellSize * 2;
-			Vector2 start    = {x * diameter, y * diameter};
-			DrawRectangleV(start, {diameter, diameter}, RED);
+			const float size  = Constants::CellSize;
+			Vector2     start = {x * size, y * size};
+			DrawRectangleV(start, {size, size}, RED);
 		}
 	}
+}
+
+void Grid::ClearRegisteredEntites()
+{
+	for ( auto &row: mGrid )
+	{
+		for ( auto &list: row )
+		{
+			list.clear();
+		}
+	}
+}
+
+IntVec2 Grid::ToGridPosition(Vector2 pos)
+{
+	return ToGridPosition(pos.x, pos.y);
+}
+
+IntVec2 Grid::ToGridPosition(float x, float y)
+{
+	IntVec2 ret;
+	ret.x = floor(x / Constants::CellSize);
+	ret.y = floor(y / Constants::CellSize);
+	return ret;
+}
+
+size_t Grid::ToGridUnits(float n)
+{
+	return static_cast<size_t>(n / Constants::CellSize);
 }

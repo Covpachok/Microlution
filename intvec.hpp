@@ -12,7 +12,7 @@ struct IntVec2
 {
 	int x, y;
 
-	IntVec2(int x, int y) :
+	IntVec2(int x = 0, int y = 0) :
 			x(x), y(y) {}
 
 	const IntVec2 &operator+=(const IntVec2 &vec);

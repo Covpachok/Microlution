@@ -36,6 +36,11 @@ private:
 	bool mShouldMove = true;
 
 	Color mColor;
+
+	double mLifeTime;
+	double mSpawnTime;
+
+	double mLastUpdateTime = 0;
 };
 
 

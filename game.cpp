@@ -9,7 +9,7 @@
 #include "logger.hpp"
 
 Game::Game() :
-		mEntities(50)
+		mEntities(10)
 {
 	InitWindow(Constants::ScreenWidth, Constants::ScreenHeight, "Microlution");
 	for ( auto &entityPtr: mEntities )
@@ -45,6 +45,7 @@ void DrawGrid()
 	}
 }
 
+#if 0
 void DrawOnGrid(Vector2 position)
 {
 	using namespace Constants;
@@ -88,6 +89,7 @@ void DrawOnGrid(Vector2 position)
 		DrawRectangleV(start, {CellSize, CellSize}, RED);
 	}
 }
+#endif
 /** HELPER FUNCTIONS END */
 
 
@@ -103,7 +105,16 @@ void Game::Start()
 
 void Game::HandleInput()
 {
-
+	int key = GetKeyPressed();
+	switch(key)
+	{
+		case MOUSE_BUTTON_LEFT:
+		{
+			Vector2 mousePos = GetMousePosition();
+			mGrid.CheckCollisions(mousePos, 0);
+			break;
+		}
+	}
 }
 
 void Game::Update()
@@ -113,9 +124,11 @@ void Game::Update()
 
 	for ( auto &microbe: mEntities )
 	{
-//		microbe->Update(GetFrameTime());
+		microbe->Update(GetFrameTime());
 	}
+	mGrid.RegisterEntities(mEntities);
 
+#if 0
 	if ( GetTime() >= lastUpdate + delay )
 	{
 		DEBUG_LOG_INFO("UPDATE");
@@ -126,6 +139,7 @@ void Game::Update()
 			//microbe->ChangeDirection();
 		}
 	}
+#endif
 }
 
 void Game::Draw()
@@ -135,11 +149,6 @@ void Game::Draw()
 	ClearBackground(WHITE);
 
 	mGrid.Draw();
-	for ( auto &microbe: mEntities )
-	{
-//		DrawOnGrid(microbe->GetPos());
-	}
-
 	DrawGrid();
 
 	for ( auto &microbe: mEntities )
