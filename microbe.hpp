@@ -5,9 +5,9 @@
 #ifndef MICROLUTION_MICROBE_HPP
 #define MICROLUTION_MICROBE_HPP
 
-#include "raylib.h"
+#include "entity.hpp"
 
-class Microbe
+class Microbe : public Entity
 {
 public:
 	Microbe();
@@ -15,40 +15,27 @@ public:
 	void ChangeDirection();
 	void ChangeDirection(const Vector2 &newDirection);
 
-	void SetShouldMove(bool b) { mShouldMove = b; }
+	void Update(float delta) override;
+	void Draw() override;
 
-	void Update(float delta);
-	void Draw();
-
-	const Vector2 &GetPos() const { return mPos; }
+	void OnCollisionEnter(Entity &other) override;
 
 private:
-	Vector2 mPos;
-
 	Vector2 mLookingDirection;
 	Vector2 mTargetDirection;
 
 	Vector2 mVelocity;
 	Vector2 mAcceleration;
-
-	float mMovementSpeed;
+	float   mMovementSpeed;
 
 	float mRotationAngle;
-
 	float mRotationDirection;
-
-	float mRotationVelocity;
-	float mRotationAcceleration;
-
-	float mRotationSpeed = 1.5f;
+	float mRotationSpeed  = 1.5f;
+	float mTargetRotation = 0.f;
 
 	bool mShouldMove = true;
 
 	Color mColor;
-
-	float mTargetRotation = 0.f;
-
-	bool mShouldRotate = true;
 };
 
 

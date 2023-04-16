@@ -9,6 +9,7 @@
 #include <sstream>
 #include "raylib.h"
 #include "raymath.h"
+#include <vector>
 
 namespace Constants
 {
@@ -16,10 +17,13 @@ namespace Constants
 	constexpr int32_t ScreenHeight     = 720;
 	constexpr int32_t HalfScreenWidth  = ScreenWidth / 2;
 	constexpr int32_t HalfScreenHeight = ScreenHeight / 2;
-	constexpr int32_t CellSize         = 16;
-	constexpr size_t CellsX = ScreenWidth / CellSize;
-	constexpr size_t CellsY = ScreenHeight / CellSize;
+	constexpr int32_t CellSize         = 40;
+	constexpr size_t  GridWidth        = ScreenWidth / CellSize;
+	constexpr size_t  GridHeight       = ScreenHeight / CellSize;
 }
+
+template <typename T>
+using Array2D = std::vector<std::vector<T>>;
 
 inline float V2AngleBetween(const Vector2 &l, const Vector2 &r)
 {
@@ -43,6 +47,11 @@ inline bool V2Equals(const Vector2 &lhs, const Vector2 &rhs, float precision = 0
 inline bool FEquals(float lhs, float rhs, float precision = 0.01f)
 {
 	return abs(lhs - rhs) <= precision;
+}
+
+inline float GetRandomFloat(float min, float max)
+{
+	return static_cast<float>(GetRandomValue(static_cast<int>(min * 100), static_cast<int>(max * 100))) / 100.f;
 }
 
 class TextureHandler

@@ -13,18 +13,15 @@ using namespace std;
 const float MicrobeSize = Constants::CellSize;
 
 Microbe::Microbe() :
-		mPos(Vector2Zero()), mAcceleration(Vector2Zero()),
+		Entity(Vector2Zero(), MicrobeSize, MicrobeSize * 2), mAcceleration(Vector2Zero()),
 		mLookingDirection({1, 0}), mTargetDirection({0, 1}),
 		mVelocity({0, 0}), mRotationAngle(PI / 4), mRotationDirection(1), mShouldMove(true), mColor(WHITE)
 {
 	mPos.x = static_cast<float>(GetRandomValue(0, Constants::ScreenWidth));
 	mPos.y = static_cast<float>(GetRandomValue(0, Constants::ScreenHeight));
 
-	mMovementSpeed        = static_cast<float>(GetRandomValue(200, 1000)) / 10.f;
-	mRotationSpeed        = static_cast<float>(GetRandomValue(50, 200)) / 100.f;
-//	mRotationSpeed        = 0.5f;
-	mRotationVelocity     = mRotationSpeed;
-	mRotationAcceleration = 0;
+	mMovementSpeed = static_cast<float>(GetRandomValue(200, 1000)) / 10.f;
+	mRotationSpeed = static_cast<float>(GetRandomValue(50, 200)) / 100.f;
 
 	ChangeDirection();
 
@@ -62,9 +59,7 @@ void Microbe::ChangeDirection(const Vector2 &newDirection)
 	mTargetDirection = newDirection;
 
 	mTargetRotation = V2AngleBetween(mLookingDirection, mTargetDirection);
-	//std::cout << angle << std::endl;
 
-	//mRotationVelocity = angle > 0 ? mRotationSpeed : ( angle < 0 ? -mRotationSpeed : mRotationSpeed );
 	mRotationDirection = mTargetRotation > 0 ? 1.f : -1.f;
 }
 
@@ -113,7 +108,6 @@ void Microbe::Update(float delta)
 
 void Microbe::Draw()
 {
-	//DrawCircleSector(mPos, MicrobeSize, 0, 360, 6, mColor);
 	const Texture2D &texture = TextureHandler::GetInstance().GetTexture();
 
 	Rectangle src    = {0, 0, static_cast<float>(texture.width), static_cast<float>(texture.height)};
@@ -123,14 +117,19 @@ void Microbe::Draw()
 
 	DrawTexturePro(texture, src, dest, origin, mRotationAngle, mColor);
 
-	// DEBUG LOOK DIRECTION
-	Vector2 lineEnd = {mPos.x + ( mLookingDirection.x * 50 ),
-	                   mPos.y + ( mLookingDirection.y * 50 )};
+	/* DEBUG LOOK DIRECTION */
+//	Vector2 lineEnd = {mPos.x + ( mLookingDirection.x * 50 ),
+//	                   mPos.y + ( mLookingDirection.y * 50 )};
+//
+//	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, RED);
+//
+//	lineEnd = {mPos.x + ( mTargetDirection.x * MicrobeSize ),
+//	           mPos.y + ( mTargetDirection.y * MicrobeSize )};
+//
+//	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, MAGENTA);
+}
 
-	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, RED);
-
-	lineEnd = {mPos.x + ( mTargetDirection.x * MicrobeSize ),
-	           mPos.y + ( mTargetDirection.y * MicrobeSize )};
-
-	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, MAGENTA);
+void Microbe::OnCollisionEnter(Entity &other)
+{
+	DEBUG_LOG_INFO("Collision detected");
 }
