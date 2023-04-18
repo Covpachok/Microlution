@@ -2,41 +2,57 @@
 // Created by heylc on 02.04.2023.
 //
 
-#include <iostream>
 #include "microbe.hpp"
-#include "raymath.h"
+
 #include "logger.hpp"
 #include "utils.hpp"
+#include "constants.hpp"
+#include "math.hpp"
+#include "timer.hpp"
 
 using namespace std;
 
-const float gMicrobePerceptionRadius = Entity::GetBodySize() * 2.f;
+const float gMicrobePerceptionRadius = Entity::GetBodySize() * 3.f;
 
 Microbe::Microbe() :
 		Entity(Vector2Zero(), gMicrobePerceptionRadius), mAcceleration(Vector2Zero()),
 		mLookingDirection({1, 0}), mTargetDirection({0, 1}),
-		mVelocity({0, 0}), mRotationAngle(PI / 4), mRotationDirection(1), mShouldMove(true), mColor(WHITE),
-		mLifeTime(0.0f), mSpawnTime(GetTime())
+		mVelocity({0, 0}), mRotationAngle(PI / 4), mRotationDirection(1), mShouldMove(true), mColor(WHITE)
 {
+	mType = static_cast<Type>(GetRandomValue(Entity::ePredator, Entity::eHerbivorous));
+
 	mPos.x = static_cast<float>(GetRandomValue(0, Constants::ScreenWidth));
 	mPos.y = static_cast<float>(GetRandomValue(0, Constants::ScreenHeight));
 
-	mMovementSpeed = ( static_cast<float>(GetRandomValue(Constants::CellSize * 10, Constants::CellSize * 50)) / 10.f );
-	mRotationSpeed = static_cast<float>(GetRandomValue(50, 200)) / 100.f;
+	mMovementSpeed = ( static_cast<float>(GetRandomValue(Constants::CellSize * 10, Constants::CellSize * 30)) / 10.f );
+	mRotationSpeed = static_cast<float>(GetRandomValue(50, 300)) / 100.f;
 
+	mChangeDirectionTimer.SetDelay(static_cast<float>(GetRandomValue(20, 50)) / 10.f);
 	ChangeDirection();
+
+
 
 #if 1
 	/* Balanced color value calculation */
 
-	float ratioR, ratioG, ratioB;
+
+	float     ratioR, ratioG, ratioB;
 	const int maxColorValue = 255;
-	ratioR = static_cast<float>(GetRandomValue(0, maxColorValue));
-	ratioG = static_cast<float>(GetRandomValue(0, maxColorValue));
-	ratioB = static_cast<float>(GetRandomValue(0, maxColorValue));
+
+	float minR = mType == ePredator ? maxColorValue / 2 : 0;
+	float minG = mType == eHerbivorous ? maxColorValue / 2 : 0;
+	float minB = 0;
+
+	float maxR = mType == ePredator ? maxColorValue : 0;
+	float maxG = mType == eHerbivorous ? maxColorValue : 0;
+	float maxB = maxColorValue / 2;
+
+	ratioR = static_cast<float>(GetRandomValue(minR, maxR));
+	ratioG = static_cast<float>(GetRandomValue(minG, maxG));
+	ratioB = static_cast<float>(GetRandomValue(minB, maxB));
 
 	const int chaosMinMax = 100;
-	auto chaos = static_cast<float>(GetRandomValue(-chaosMinMax, chaosMinMax));
+	auto      chaos       = static_cast<float>(GetRandomValue(-chaosMinMax, chaosMinMax));
 
 	float globalRatio = ratioR + ratioG + ratioB + chaos;
 	ratioR /= globalRatio;
@@ -78,28 +94,80 @@ void Microbe::ChangeDirection(const Vector2 &newDirection)
 	mTargetRotation = V2AngleBetween(mLookingDirection, mTargetDirection);
 
 	mRotationDirection = mTargetRotation > 0 ? 1.f : -1.f;
+
+	mChangeDirectionTimer.Reset();
 }
 
 void Microbe::Update(float delta)
 {
-	mLifeTime += delta;
-
-	const double delay = static_cast<float>(GetRandomValue(10, 50)) / 10.f;
-	if ( GetTime() >= mLastUpdateTime + delay )
+	mChangeDirectionTimer.Update(delta);
+	if ( mChangeDirectionTimer.IsElapsed())
 	{
-		mLastUpdateTime = GetTime();
 		ChangeDirection();
+		DEBUG_LOG_INFO("Changing direction");
 	}
 
-	if ( !V2Equals(mLookingDirection, mTargetDirection))
+	Rotate(delta);
+	Move(delta);
+}
+
+void Microbe::Draw()
+{
+	const Texture2D &texture = TextureHandler::GetInstance().GetTexture();
+
+	Rectangle src    = {0, 0, static_cast<float>(texture.width), static_cast<float>(texture.height)};
+	float     size   = static_cast<float>(texture.width) * ( GetBodySize() / static_cast<float>(texture.width));
+	Rectangle dest   = {mPos.x, mPos.y, size, size};
+	Vector2   origin = {size / 2.f, size / 2.f};
+
+	DrawTexturePro(texture, src, dest, origin, mRotationAngle, mColor);
+
+#if 1
+	/* DEBUG LOOK DIRECTION */
+	Vector2 lineEnd = {mPos.x + ( mLookingDirection.x * GetBodyRadius() * 2 ),
+	                   mPos.y + ( mLookingDirection.y * GetBodyRadius() * 2 )};
+
+	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, GREEN);
+
+	lineEnd = {mPos.x + ( mTargetDirection.x * GetBodyRadius()),
+	           mPos.y + ( mTargetDirection.y * GetBodyRadius())};
+
+	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, BLUE);
+#endif
+
+#if 0
+	/* DEBUG PERCEPTION RADIUS */
+	DrawCircleSectorLines(mPos, mPerceptionRadius, 0, 360, 18, RED);
+#endif
+}
+
+void Microbe::OnBodyCollisionEnter(Entity &other)
+{
+//	DEBUG_LOG_INFO("Body collides");
+}
+
+void Microbe::OnPerceptionCollisionEnter(Entity &other)
+{
+//	DEBUG_LOG_INFO("Percepts something");
+	if ( other.GetType() == Entity::ePredator && mType == Entity::eHerbivorous )
 	{
-		float val   = ( 1.f - Vector2Distance(mLookingDirection, mTargetDirection)) * mRotationSpeed;
-		float speed = mRotationSpeed - val;
-		float angle = mRotationDirection * speed * delta;
-		mLookingDirection = Vector2Rotate(mLookingDirection, angle);
-		mRotationAngle += angle * ( 180 / PI );
+		ChangeDirection(Vector2Normalize(Vector2Subtract(mPos, other.GetPos())));
 	}
+	if ( other.GetType() == Entity::eHerbivorous && mType == Entity::ePredator )
+	{
+		ChangeDirection(Vector2Normalize(Vector2Subtract(other.GetPos(), mPos)));
+	}
+}
 
+std::string Microbe::ToString() const
+{
+	string ret = "Microbe - " + Entity::ToString();
+
+	return ret;
+}
+
+void Microbe::Move(float delta)
+{
 	if ( mShouldMove )
 	{
 		mVelocity.x = mMovementSpeed * mLookingDirection.x;
@@ -132,32 +200,14 @@ void Microbe::Update(float delta)
 	}
 }
 
-void Microbe::Draw()
+void Microbe::Rotate(float delta)
 {
-	const Texture2D &texture = TextureHandler::GetInstance().GetTexture();
-
-	Rectangle src    = {0, 0, static_cast<float>(texture.width), static_cast<float>(texture.height)};
-	float     size   = static_cast<float>(texture.width) * ( GetBodySize() / static_cast<float>(texture.width));
-	Rectangle dest   = {mPos.x, mPos.y, size, size};
-	Vector2   origin = {size / 2.f, size / 2.f};
-
-	DrawTexturePro(texture, src, dest, origin, mRotationAngle, mColor);
-
-#if 0
-	/* DEBUG LOOK DIRECTION */
-	Vector2 lineEnd = {mPos.x + ( mLookingDirection.x * GetBodyRadius() * 2 ),
-					   mPos.y + ( mLookingDirection.y * GetBodyRadius() * 2 )};
-
-	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, GREEN);
-
-	lineEnd = {mPos.x + ( mTargetDirection.x * GetBodyRadius()),
-			   mPos.y + ( mTargetDirection.y * GetBodyRadius())};
-
-	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, BLUE);
-#endif
-}
-
-void Microbe::OnCollisionEnter(Entity &other)
-{
-	DEBUG_LOG_INFO("Collision detected");
+	if ( !V2Equals(mLookingDirection, mTargetDirection))
+	{
+		float val   = ( 1.f - Vector2Distance(mLookingDirection, mTargetDirection)) * mRotationSpeed;
+		float speed = mRotationSpeed - val;
+		float angle = mRotationDirection * speed * delta;
+		mLookingDirection = Vector2Rotate(mLookingDirection, angle);
+		mRotationAngle += angle * ( 180 / PI );
+	}
 }

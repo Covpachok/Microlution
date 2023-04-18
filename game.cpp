@@ -2,14 +2,15 @@
 // Created by heylc on 11.04.2023.
 //
 
+#include <raylib.h>
+
 #include "game.hpp"
-#include "raylib.h"
-#include "utils.hpp"
+#include "constants.hpp"
 #include "microbe.hpp"
 #include "logger.hpp"
 
 Game::Game() :
-		mEntities(10)
+		mEntities(36), mPause(false)
 {
 	InitWindow(Constants::ScreenWidth, Constants::ScreenHeight, "Microlution");
 	for ( auto &entityPtr: mEntities )
@@ -21,6 +22,7 @@ Game::Game() :
 	mTextureHandler.LoadTexture("../assets/microbe_texture.png");
 
 	mGrid.RegisterEntities(mEntities);
+	DEBUG_LOG_INFO(std::to_string(Constants::GridWidth) + " " + std::to_string(Constants::GridHeight));
 }
 
 Game::~Game()
@@ -52,14 +54,14 @@ void DrawOnGrid(Vector2 position)
 
 	const float   halfSize = CellSize / 2.5f;
 	const Vector2 arr[]    = {{0,         0},
-	                          {halfSize,  0},
-	                          {0,         halfSize},
-	                          {halfSize,  halfSize},
-	                          {-halfSize, 0},
-	                          {0,         -halfSize},
-	                          {-halfSize, -halfSize},
-	                          {halfSize,  -halfSize},
-	                          {-halfSize, halfSize}};
+							  {halfSize,  0},
+							  {0,         halfSize},
+							  {halfSize,  halfSize},
+							  {-halfSize, 0},
+							  {0,         -halfSize},
+							  {-halfSize, -halfSize},
+							  {halfSize,  -halfSize},
+							  {-halfSize, halfSize}};
 
 	for ( auto i: arr )
 	{
@@ -97,7 +99,10 @@ void Game::Start()
 {
 	while ( !WindowShouldClose())
 	{
-		Update();
+		if ( !mPause )
+		{
+			Update();
+		}
 		Draw();
 		HandleInput();
 	}
@@ -105,28 +110,39 @@ void Game::Start()
 
 void Game::HandleInput()
 {
-	int key = GetKeyPressed();
-	switch(key)
+	if ( IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
 	{
-		case MOUSE_BUTTON_LEFT:
+		auto       entities = mGrid.GetEntities(GetMousePosition());
+		for ( auto &entity: entities )
 		{
-			Vector2 mousePos = GetMousePosition();
-			mGrid.CheckCollisions(mousePos, 0);
-			break;
+			if ( entity == nullptr )
+			{
+				continue;
+			}
+			DEBUG_LOG_INFO(entity->ToString());
 		}
+	}
+
+	if ( IsKeyPressed(KEY_SPACE))
+	{
+		mPause = !mPause;
 	}
 }
 
 void Game::Update()
 {
-	const double  delay      = 2;
-	static double lastUpdate = 0;
-
-	for ( auto &microbe: mEntities )
+	for ( auto &entity: mEntities )
 	{
-		microbe->Update(GetFrameTime());
+		entity->Update(GetFrameTime());
 	}
+
 	mGrid.RegisterEntities(mEntities);
+
+	for ( auto &entity: mEntities )
+	{
+		mGrid.CheckPerceptionCollision(entity.get());
+		mGrid.CheckBodyCollision(entity.get());
+	}
 
 #if 0
 	if ( GetTime() >= lastUpdate + delay )
@@ -148,8 +164,8 @@ void Game::Draw()
 
 	ClearBackground(WHITE);
 
-	mGrid.Draw();
-	DrawGrid();
+//	mGrid.Draw();
+//	DrawGrid();
 
 	for ( auto &microbe: mEntities )
 	{
@@ -160,4 +176,18 @@ void Game::Draw()
 	DrawFPS(0, 0);
 
 	EndDrawing();
+}
+
+void Game::SpawnEntity(Entity::Type type)
+{
+	// Primarily used for initialisation and spawning of vegetables
+
+	// create corresponding entity
+	// add to entity list
+}
+
+void Game::SpawnEntity(const Entity &first, const Entity &second)
+{
+	// first and second are parents, children must be spawned adjacent to them, and have similar stats
+	// add to entity list
 }

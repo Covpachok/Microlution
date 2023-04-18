@@ -3,9 +3,14 @@
 //
 
 #include "grid.hpp"
-#include "utils.hpp"
-#include "entity.hpp"
+
 #include <cassert>
+#include <algorithm>
+
+#include "entity.hpp"
+#include "constants.hpp"
+#include "math.hpp"
+#include "logger.hpp"
 
 Grid::Grid()
 {
@@ -20,7 +25,7 @@ Grid::Grid()
 
 void Grid::RegisterEntities(std::vector<std::shared_ptr<Entity>> &entities)
 {
-	ClearRegisteredEntites();
+	ClearRegisteredEntities();
 	for ( auto &entity: entities )
 	{
 		const float bodyRadius = entity->GetBodyRadius();
@@ -58,62 +63,148 @@ void Grid::RegisterEntities(std::vector<std::shared_ptr<Entity>> &entities)
 				gridX = static_cast<size_t>(gridPos.x);
 				gridY = static_cast<size_t>(gridPos.y);
 
-				mGrid[gridY][gridX].push_back(entity.get());
+				mGrid[gridY][gridX].insert(entity.get());
 			}
 		}
 
 	}
 }
 
-//void Grid::CheckCollisions(size_t id)
+//void Grid::GetEntities(size_t id)
 //{
 //	auto entity = mGrid[y][x].at(id);
 //}
 
-void Grid::CheckCollisions(Vector2 pos, float radius)
+const Grid::EntityList &Grid::GetEntities(const Vector2 &pos)
 {
 	IntVec2 gridPos = ToGridPosition(pos);
 
-	assert(( gridPos.y >= 0 && gridPos.y < Constants::GridHeight ));
-	assert(( gridPos.x >= 0 && gridPos.x < Constants::GridWidth ));
+	int resX = gridPos.x;
+	int resY = gridPos.y;
 
-	int gridRadius = 0;
-
-	for ( int y = -gridRadius; y <= gridRadius; ++y )
+	if ( resX < 0 )
 	{
-		for ( int x = -gridRadius; x <= gridRadius; ++x )
+		resX = Constants::GridWidth - 1;
+	}
+	else if ( resX >= Constants::GridWidth )
+	{
+		resX = 0;
+	}
+
+	if ( resY < 0 )
+	{
+		resY = Constants::GridHeight - 1;
+	}
+	else if ( resY >= Constants::GridHeight )
+	{
+		resY = 0;
+	}
+
+	assert(gridPos.y >= 0 && gridPos.y < Constants::GridHeight);
+	assert(gridPos.x >= 0 && gridPos.x < Constants::GridWidth);
+
+#if 0
+	for ( auto &entity: mGrid[resY][resX] )
+	{
+		if ( entity == nullptr )
 		{
-			int resX = gridPos.x + x;
-			int resY = gridPos.y + y;
+			continue;
+		}
 
-			if ( resX < 0 )
-			{
-				resX = Constants::GridWidth - 1;
-			}
-			else if ( resX >= Constants::GridWidth )
-			{
-				resX = 0;
-			}
+		std::cout << "Collided" << "\n";
+	}
+#endif
 
-			if ( resY < 0 )
-			{
-				resY = Constants::GridHeight - 1;
-			}
-			else if ( resY >= Constants::GridHeight )
-			{
-				resY = 0;
-			}
+	return mGrid[resY][resX];
+}
 
-			for(auto &entity: mGrid[resY][resX])
-			{
-				if(entity == nullptr)
-					continue;
+std::list<Entity *> Grid::GetEntitiesInRadius(const Vector2 &pos, float radius)
+{
+	IntVec2 cellPos    = ToGridPosition(pos);
+	int     cellRadius = CeilToGridUnits(radius);
 
-				std::cout << "Collided" << "\n";
+	std::list<Entity *> ret;
+	IntVec2             curr;
+
+	for ( int y = -cellRadius; y <= cellRadius; ++y )
+	{
+		for ( int x = -cellRadius; x <= cellRadius; ++x )
+		{
+			curr = {cellPos.x + x, cellPos.y + y};
+			curr = FitOnGrid(curr);
+			for ( auto &entity: mGrid[curr.y][curr.x] )
+			{
+				ret.push_back(entity);
 			}
 		}
 	}
+	return ret;
 }
+
+void Grid::CheckPerceptionCollision(Entity *checkEntity)
+{
+	auto entityInRadius = GetEntitiesInRadius(checkEntity->GetPos(), checkEntity->GetPerceptionRadius());
+
+	for ( auto &otherEntity: entityInRadius )
+	{
+		if ( otherEntity == checkEntity || otherEntity == nullptr )
+		{
+			continue;
+		}
+
+		if ( Vector2Distance(otherEntity->GetPos(), checkEntity->GetPos()) <= checkEntity->GetPerceptionRadius())
+		{
+			checkEntity->OnPerceptionCollisionEnter(*otherEntity);
+		}
+	}
+
+#if 0
+	IntVec2 cellPos    = ToGridPosition(checkEntity->GetPos());
+	int     cellRadius = CeilToGridUnits(checkEntity->GetPerceptionRadius());
+
+	IntVec2 curr;
+
+	for ( int y = -cellRadius; y <= cellRadius; ++y )
+	{
+		for ( int x = -cellRadius; x <= cellRadius; ++x )
+		{
+			curr = {cellPos.x + x, cellPos.y + y};
+			curr = FitOnGrid(curr);
+			for ( auto &entity: mGrid[curr.y][curr.x] )
+			{
+				if ( entity == checkEntity || entity == nullptr )
+				{
+					continue;
+				}
+
+				if ( Vector2Distance(entity->GetPos(), checkEntity->GetPos()) <= checkEntity->GetPerceptionRadius())
+				{
+					checkEntity->OnPerceptionCollisionEnter(*entity);
+				}
+			}
+		}
+	}
+#endif
+}
+
+void Grid::CheckBodyCollision(Entity *checkEntity)
+{
+	auto entityInRadius = GetEntitiesInRadius(checkEntity->GetPos(), checkEntity->GetBodyRadius());
+
+	for ( auto &otherEntity: entityInRadius )
+	{
+		if ( otherEntity == checkEntity || otherEntity == nullptr )
+		{
+			continue;
+		}
+
+		if ( Vector2Distance(otherEntity->GetPos(), checkEntity->GetPos()) <= checkEntity->GetBodyRadius())
+		{
+			checkEntity->OnBodyCollisionEnter(*otherEntity);
+		}
+	}
+}
+
 
 void Grid::Draw()
 {
@@ -133,7 +224,7 @@ void Grid::Draw()
 	}
 }
 
-void Grid::ClearRegisteredEntites()
+void Grid::ClearRegisteredEntities()
 {
 	for ( auto &row: mGrid )
 	{
@@ -143,21 +234,26 @@ void Grid::ClearRegisteredEntites()
 		}
 	}
 }
-
-IntVec2 Grid::ToGridPosition(Vector2 pos)
+IntVec2 Grid::FitOnGrid(IntVec2 pos)
 {
-	return ToGridPosition(pos.x, pos.y);
+	if ( pos.x < 0 )
+	{
+		pos.x = Constants::GridWidth - 1;
+	}
+	else if ( pos.x >= Constants::GridWidth )
+	{
+		pos.x = 0;
+	}
+
+	if ( pos.y < 0 )
+	{
+		pos.y = Constants::GridHeight - 1;
+	}
+	else if ( pos.y >= Constants::GridHeight )
+	{
+		pos.y = 0;
+	}
+
+	return pos;
 }
 
-IntVec2 Grid::ToGridPosition(float x, float y)
-{
-	IntVec2 ret;
-	ret.x = floor(x / Constants::CellSize);
-	ret.y = floor(y / Constants::CellSize);
-	return ret;
-}
-
-size_t Grid::ToGridUnits(float n)
-{
-	return static_cast<size_t>(n / Constants::CellSize);
-}

@@ -6,6 +6,7 @@
 #define MICROLUTION_MICROBE_HPP
 
 #include "entity.hpp"
+#include "timer.hpp"
 
 class Microbe : public Entity
 {
@@ -18,9 +19,17 @@ public:
 	void Update(float delta) override;
 	void Draw() override;
 
-	void OnCollisionEnter(Entity &other) override;
+	void OnBodyCollisionEnter(Entity &other) override;
+	void OnPerceptionCollisionEnter(Entity &other) override;
+
+	std::string ToString() const override;
 
 private:
+	void Move(float delta);
+	void Rotate(float delta);
+
+private:
+	/* ==== MOVEMENT ==== */
 	Vector2 mLookingDirection;
 	Vector2 mTargetDirection;
 
@@ -34,13 +43,17 @@ private:
 	float mTargetRotation = 0.f;
 
 	bool mShouldMove = true;
+	/* ================== */
 
+
+	/* ==== STATS ==== */
 	Color mColor;
+	/* =============== */
 
-	double mLifeTime;
-	double mSpawnTime;
 
-	double mLastUpdateTime = 0;
+	/* ==== UTILITY STUFF ==== */
+	Timer mChangeDirectionTimer;
+	/* ======================= */
 };
 
 

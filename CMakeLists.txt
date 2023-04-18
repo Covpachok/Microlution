@@ -8,5 +8,5 @@ set(BUILD_GAMES OFF CACHE BOOL "" FORCE) # or games
 
 add_subdirectory(include/raylib)
 
-add_executable(${PROJECT_NAME} main.cpp utils.hpp logger.hpp microbe.cpp microbe.hpp intvec.hpp utils.cpp collision_handler.cpp collision_handler.hpp game.cpp game.hpp entity.hpp vegetable.cpp vegetable.hpp grid.cpp grid.hpp entity.cpp)
+add_executable(${PROJECT_NAME} main.cpp utils.hpp logger.hpp microbe.cpp microbe.hpp intvec.hpp utils.cpp game.cpp game.hpp entity.hpp vegetable.cpp vegetable.hpp grid.cpp grid.hpp entity.cpp timer.hpp math.hpp constants.hpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib -static gcc stdc++ winpthread -dynamic)

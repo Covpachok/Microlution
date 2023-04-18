@@ -15,7 +15,7 @@ public:
 	void Update(float delta) override;
 	void Draw() override;
 
-	void OnCollisionEnter(Entity &other) override;
+	void OnBodyCollisionEnter(Entity &other) override;
 
 private:
 };

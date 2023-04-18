@@ -15,7 +15,7 @@ void Vegetable::Draw()
 	DEBUG_LOG_INFO("Draw");
 }
 
-void Vegetable::OnCollisionEnter(Entity &other)
+void Vegetable::OnBodyCollisionEnter(Entity &other)
 {
 	DEBUG_LOG_INFO("Collide");
 }
