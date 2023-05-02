@@ -5,7 +5,7 @@
 #ifndef MICROLUTION_TIMER_HPP
 #define MICROLUTION_TIMER_HPP
 
-#include <raylib.h>
+#include "raylib.h"
 
 class Timer
 {

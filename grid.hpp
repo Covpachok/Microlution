@@ -12,8 +12,8 @@
 #include <set>
 #include <list>
 
-#include "utils.hpp"
-#include "intvec.hpp"
+#include "stuff/utils.hpp"
+#include "stuff/intvec.hpp"
 #include "constants.hpp"
 
 class Entity;
@@ -21,31 +21,36 @@ class Entity;
 class Grid
 {
 public:
-	using EntityList = std::set<Entity *>;
+	using EntitySet = std::set<Entity *>;
 
 public:
 	Grid();
 
-	void RegisterEntities(std::vector<std::shared_ptr<Entity>> &entities);
+	// RegisterEntity only one at a time
+	void RegisterEntities(std::list<std::shared_ptr<Entity>> &entities);
+	void RegisterEntity(Entity *entity);
 
-	const EntityList &GetEntities(const Vector2 &pos);
-	void CheckPerceptionCollision(Entity *checkEntity);
-	void CheckBodyCollision(Entity *checkEntity);
+	void RegisterOnDebugGrid(Vector2 pos, float radius);
+
+	void ClearRegisteredEntities();
+
+	const EntitySet &GetEntities(const Vector2 &pos);
+	void CheckCollision(Entity *checkEntity);
 
 	void Draw();
 
 private:
-	std::list<Entity *> GetEntitiesInRadius(const Vector2 &pos, float radius);
-	void ClearRegisteredEntities();
-
 	static IntVec2 FitOnGrid(IntVec2 pos);
 	static IntVec2 ToGridPosition(const Vector2 &pos) { return ToGridPosition(pos.x, pos.y); }
 	static IntVec2 ToGridPosition(float x, float y) { return {FloorToGridUnits(x), FloorToGridUnits(y)}; }
+
 	static int FloorToGridUnits(float n) { return static_cast<int>(std::floor(n / Constants::CellSize)); }
 	static int CeilToGridUnits(float n) { return static_cast<int>(std::ceil(n / Constants::CellSize)); }
 
 private:
-	Array2D<EntityList> mGrid;
+	// replace this with an actual array
+	std::array<std::array<EntitySet, Constants::GridWidth>, Constants::GridHeight> mGrid;
+	std::array<std::array<bool, Constants::GridWidth>, Constants::GridHeight> mDebugGrid;
 };
 
 

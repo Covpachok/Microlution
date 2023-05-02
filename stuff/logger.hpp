@@ -6,7 +6,7 @@
 #define MICROLUTION_LOGGER_HPP
 
 #include <iostream>
-#include <raylib.h>
+#include "raylib.h"
 #include <cmath>
 
 #define DEBUG_LOG_INFO(msg) LogInfo(msg, __func__, __LINE__)

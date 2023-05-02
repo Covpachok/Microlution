@@ -5,7 +5,7 @@
 #ifndef MICROLUTION_MATH_HPP
 #define MICROLUTION_MATH_HPP
 
-#include <raymath.h>
+#include "raymath.h"
 #include <cmath>
 
 inline float V2AngleBetween(const Vector2 &l, const Vector2 &r)

@@ -5,7 +5,7 @@
 #ifndef MICROLUTION_UTILS_HPP
 #define MICROLUTION_UTILS_HPP
 
-#include <raylib.h>
+#include "raylib.h"
 #include <iostream>
 #include <vector>
 

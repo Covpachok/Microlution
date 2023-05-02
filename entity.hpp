@@ -13,32 +13,40 @@
 class Entity
 {
 public:
+	// Food/Microbe
+	// Food of two types - meat and vegetation
+	// Microbe of two types - Predator and Herbivorous
 	enum Type
 	{
-		ePredator, eHerbivorous, eVegetable, eNone, eAmount
+		ePredator, eHerbivorous, eVegetable, eMeat, eNone, eAmount
 	};
 
-	constexpr static float DefaultBodySize = Constants::CellSize;
+	constexpr static float DefaultBodySize = 1;
 
 public:
-	Entity(Vector2 pos = {0, 0}, float perceptionRadius = 0) :
-			mPos(pos), mPerceptionRadius(perceptionRadius) {}
+	Entity(Vector2 pos = {0, 0}) :
+			mPos(pos) {}
 
-	virtual ~Entity();
+	virtual ~Entity() = 0;
 
 	virtual void Update(float delta) = 0;
 	virtual void Draw() = 0;
 
 	virtual void OnBodyCollisionEnter(Entity &other) = 0;
 	virtual void OnPerceptionCollisionEnter(Entity &other) = 0;
+	virtual void OnDeath() = 0;
+
+	void Kill() { mIsDead = true; OnDeath(); }
 
 	const Vector2 &GetPos() const { return mPos; }
 
-	static float GetBodySize() { return DefaultBodySize; }
-	static float GetBodyRadius() { return DefaultBodySize / 2.f; }
+	float GetBodyRadius() const { return mBodyRadius; }
+	float GetBodySize() const { return mBodyRadius * 2; }
+	float GetPerceptionRadius() const { return mPerceptionRadius; }
 
 	Type GetType() const { return mType; }
-	float GetPerceptionRadius() const { return mPerceptionRadius; }
+	bool IsDead() const { return mIsDead; }
+	virtual bool CanReproduce() const { return false; };
 
 	virtual std::string ToString() const;
 
@@ -47,12 +55,11 @@ protected:
 
 	Vector2 mPos;
 
-	float mPerceptionRadius;
+	float mPerceptionRadius = 4;
+	float mBodyRadius = 0.75f;
 
 private:
-	// Can be used to delete entity after collision detection process ended, so none of the iterators will be broken
-	size_t mGridPosX, mGridPosY;
-	size_t mGridId;
+	bool  mIsDead = false;
 };
 
 #endif //MICROLUTION_ENTITY_HPP

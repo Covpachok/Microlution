@@ -17,8 +17,8 @@ struct IntVec2
 
 	const IntVec2 &operator+=(const IntVec2 &vec);
 	const IntVec2 &operator-=(const IntVec2 &vec);
-	IntVec2 operator+(const IntVec2 &vec) const;
-	IntVec2 operator-(const IntVec2 &vec) const;
+//	IntVec2 operator+(const IntVec2 &vec) const;
+//	IntVec2 operator-(const IntVec2 &vec) const;
 	bool operator==(const IntVec2 &vec) const;
 
 	std::string ToString() const;
@@ -38,15 +38,15 @@ inline const IntVec2 &IntVec2::operator-=(const IntVec2 &vec)
 	return *this;
 }
 
-inline IntVec2 IntVec2::operator+(const IntVec2 &vec) const
-{
-	return {x + vec.x, y + vec.y};
-}
+//inline IntVec2 IntVec2::operator+(const IntVec2 &vec) const
+//{
+//	return {x + vec.x, y + vec.y};
+//}
 
-inline IntVec2 IntVec2::operator-(const IntVec2 &vec) const
-{
-	return {x - vec.x, y - vec.y};
-}
+//inline IntVec2 IntVec2::operator-(const IntVec2 &vec) const
+//{
+//	return {x - vec.x, y - vec.y};
+//}
 
 inline bool IntVec2::operator==(const IntVec2 &vec) const
 {

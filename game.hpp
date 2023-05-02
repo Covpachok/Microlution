@@ -7,9 +7,13 @@
 
 #include <list>
 #include <memory>
-#include "utils.hpp"
+#include "stuff/utils.hpp"
 #include "grid.hpp"
 #include "entity.hpp"
+#include "stuff/timer.hpp"
+#include "microbe.hpp"
+#include "food.hpp"
+#include "entity_manager.hpp"
 
 /*
  * I don't know how to make collision detection properly, so
@@ -29,6 +33,12 @@
  * if fight -> do fight, dead entities will set flag *dead*, so they will not be processed by grid, dispose them after
  */
 
+/*
+ * Entity manager stores microbes and food separately, then it passes all the entities to the grid one by one.
+ * Grid register all of them as the ENTITIES, grid shouldn't know anything about microbes or food types, it only aware
+ * of that it is the entity and it is on the grid.
+ */
+
 class Game
 {
 public:
@@ -43,17 +53,24 @@ private:
 	void Draw();
 
 private:
-	void SpawnEntity(Entity::Type type);
-	void SpawnEntity(const Entity &first, const Entity &second);
+//	void SpawnMicrobes(size_t amount);
+//	void SpawnFood(size_t amount);
+//	void BreedMicrobes(const Entity &first, const Entity &second);
 
 private:
-	std::vector<std::shared_ptr<Entity>> mEntities;
+//	std::list<std::shared_ptr<Entity>> mEntities;
+
+	EntityManager mEntityManager;
 
 	Grid mGrid;
 
 	TextureHandler mTextureHandler;
 
 	bool mPause;
+
+	Timer mEntitySpawnTimer;
+
+	float mTEMPRadius = 1.5f;
 };
 
 

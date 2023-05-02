@@ -13,9 +13,10 @@ namespace Constants
 	constexpr size_t ScreenHeight     = 720;
 	constexpr size_t HalfScreenWidth  = ScreenWidth / 2;
 	constexpr size_t HalfScreenHeight = ScreenHeight / 2;
-	constexpr size_t CellSize         = 40;
+	constexpr size_t CellSize         = 16;
 	constexpr size_t GridWidth        = ScreenWidth / CellSize;
 	constexpr size_t GridHeight       = ScreenHeight / CellSize;
+	constexpr size_t MicrobesAmount   = 200;
 }
 
 #endif //MICROLUTION_CONSTANTS_HPP
