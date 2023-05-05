@@ -8,7 +8,7 @@
 //ePredator, eHerbivorous, eVegetable, eMeat, eNone, eAmount
 std::string TypeString[Entity::eAmount] = {"Predator", "Herbivorous", "Vegetable", "Meat", "None"};
 
-Entity::~Entity() {}
+Entity::~Entity() = default;
 
 std::string Entity::ToString() const
 {

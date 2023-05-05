@@ -39,9 +39,15 @@ public:
 
 	EntityList &GetEntityList() { return mEntities; }
 
+	size_t GetVegetableCount() const { return mVegetableCount; }
+	size_t GetMeatCount() const { return mMeatCount; }
+	size_t GetHerbivorousCount() const { return mHerbivorousCount; }
+	size_t GetPredatorCount() const { return mPredatorCount; }
+
 private:
-	void SpawnVegetables(); // randomly
-	void SpawnMeat(/*on position*/);
+	void SpawnVegetables(size_t amount); // randomly
+	void SpawnMeat(Entity *from);
+	void DeadEntitiesCleanup();
 	void DestroyEntities(); // destroys only dead entities, and spawns meat on their places
 
 private:
@@ -51,13 +57,15 @@ private:
 //	MicrobeList mMicrobesPool;
 //	FoodList mFoodPool;
 
-	int mVegetableCount = 0;
-	int mMeatCount      = 0;
+	size_t mVegetablesSpawnAmount;
 
-	int mHerbivorousCount = 0;
-	int mPredatorCount    = 0;
+	size_t mVegetableCount = 0;
+	size_t mMeatCount      = 0;
 
-	Timer mSpawnVegetables;
+	size_t mHerbivorousCount = 0;
+	size_t mPredatorCount    = 0;
+
+	Timer mSpawnVegetablesTimer;
 };
 
 

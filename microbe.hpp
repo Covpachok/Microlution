@@ -8,6 +8,8 @@
 #include "entity.hpp"
 #include "stuff/timer.hpp"
 
+class Food;
+
 class Microbe : public Entity
 {
 	enum class MovementState
@@ -15,8 +17,10 @@ class Microbe : public Entity
 		eWandering, eFleeing, eChasing
 	};
 
+	const int kMicrobeNutritionValue = 25;
+
 public:
-	Microbe();
+	explicit Microbe(Entity::Type type = Entity::eNone);
 	Microbe(Vector2 pos, Entity::Type type);
 
 	void ChangeDirection();
@@ -29,8 +33,10 @@ public:
 	void OnPerceptionCollisionEnter(Entity &other) override;
 	void OnDeath() override;
 
-	bool CanReproduce() const override { return mReproductionDelayTimer.IsElapsed(); };
+	bool CanReproduce() const override { return mReproductionDelayTimer.IsElapsed() && SatedEnough(); };
 	void ResetReproductionTimer() { mReproductionDelayTimer.Reset(); }
+
+	int GetNutritionValue() const override { return mSatiety / 2 + kMicrobeNutritionValue; }
 
 	std::string ToString() const override;
 
@@ -39,18 +45,41 @@ private:
 
 	void Move(float delta);
 	void Rotate(float delta);
-	void OutOfBoundsCheck();
+	void OnOutOfBounds();
 
 	void Reproduce(Microbe &other);
+	void Eat(Food &food);
+
+	void RecalculateMovementSpeed() { mCurrentMovementSpeed = mMovementSpeed * ( 1.25f - SatietyPercentage()); }
+
+	float SatietyPercentage() const { return static_cast<float>(mSatiety) / static_cast<float>(mMaxSatiety); }
+	bool SatedEnough() const { return SatietyPercentage() >= 0.5f; }
+
+	bool ShouldFleeFrom(Type other) const { return mType == eHerbivorous && other == ePredator; }
+	bool ShouldChase(Type other) const
+	{
+		return (( mType == eHerbivorous && other == eVegetable ) ||
+		        ( mType == ePredator && other == eMeat ) ||
+		        ( mType == ePredator && other == eHerbivorous )) &&
+		       !SatedEnough() && mMovementState != MovementState::eFleeing;
+	}
+	bool ShouldReproduceWith(Type other) const
+	{
+		return mType == other && mMovementState != MovementState::eFleeing && CanReproduce();
+	}
+
+	void ReduceSatiety(int value) { mSatiety = std::min(mSatiety - value, 0); }
 
 protected:
 	/* ==== MOVEMENT ==== */
 	Vector2 mLookingDirection = {1, 0};
 	Vector2 mTargetDirection  = {0, 1};
+	Vector2 mNewDirection     = {0, 0};
 
-	Vector2 mVelocity      = {0, 0};
-	Vector2 mAcceleration  = {0, 0};
-	float   mMovementSpeed = 0;
+	Vector2 mVelocity             = {0, 0};
+	Vector2 mAcceleration         = {0, 0};
+	float   mCurrentMovementSpeed = 0;
+	float   mMovementSpeed        = 0;
 
 	float mRotationAngle     = 0;
 	float mRotationDirection = 0;
@@ -69,10 +98,14 @@ protected:
 	MovementState mMovementState = MovementState::eWandering;
 
 	/* ==== STATS ==== */
-	Color mColor = WHITE;
+	Color mColor         = WHITE;
+	Color mOriginalColor = WHITE;
 
-	int mSatiety;
-	int mMaxSatiety;
+	/* FOOD */
+	int mSatiety    = 0;
+	int mMaxSatiety = 0;
+
+	float mStarvationTime = 0;
 	/* =============== */
 
 

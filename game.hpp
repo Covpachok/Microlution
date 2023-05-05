@@ -68,9 +68,7 @@ private:
 
 	bool mPause;
 
-	Timer mEntitySpawnTimer;
-
-	float mTEMPRadius = 1.5f;
+	float mGameSpeed = 1.f;
 };
 
 

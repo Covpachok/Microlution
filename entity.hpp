@@ -24,8 +24,8 @@ public:
 	constexpr static float DefaultBodySize = 1;
 
 public:
-	Entity(Vector2 pos = {0, 0}) :
-			mPos(pos) {}
+	explicit Entity(Vector2 pos = {0, 0}, Type type = eNone) :
+			mPos(pos), mType(type) {}
 
 	virtual ~Entity() = 0;
 
@@ -36,16 +36,23 @@ public:
 	virtual void OnPerceptionCollisionEnter(Entity &other) = 0;
 	virtual void OnDeath() = 0;
 
-	void Kill() { mIsDead = true; OnDeath(); }
+	void Kill()
+	{
+		mIsDead = true;
+		OnDeath();
+	}
 
+	Type GetType() const { return mType; }
 	const Vector2 &GetPos() const { return mPos; }
 
 	float GetBodyRadius() const { return mBodyRadius; }
 	float GetBodySize() const { return mBodyRadius * 2; }
 	float GetPerceptionRadius() const { return mPerceptionRadius; }
 
-	Type GetType() const { return mType; }
+	virtual int GetNutritionValue() const = 0;
+
 	bool IsDead() const { return mIsDead; }
+
 	virtual bool CanReproduce() const { return false; };
 
 	virtual std::string ToString() const;
@@ -56,10 +63,10 @@ protected:
 	Vector2 mPos;
 
 	float mPerceptionRadius = 4;
-	float mBodyRadius = 0.75f;
+	float mBodyRadius       = 0.75f;
 
 private:
-	bool  mIsDead = false;
+	bool mIsDead = false;
 };
 
 #endif //MICROLUTION_ENTITY_HPP

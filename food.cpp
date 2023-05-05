@@ -5,25 +5,27 @@
 #include "food.hpp"
 #include "stuff/logger.hpp"
 
-const float kMeatSpoilageTime      = 50;
-const float kVegetableSpoliageTime = 300;
+const float      kMeatSpoilageTime        = 15;
+const float      kVegetableSpoilageTime   = 60;
+const Color      kVegetableColor          = {0, 255, 0, 100};
+const Color      kMeatColor               = {255, 0, 0, 100};
+static const int kVegetableNutritionValue = 10;
 
-Food::Food(Entity::Type type)
+
+Food::Food() :
+		mNutritionValue(kVegetableNutritionValue)
 {
 	mPos.x = static_cast<float>(GetRandomValue(0, Constants::ScreenWidth));
 	mPos.y = static_cast<float>(GetRandomValue(0, Constants::ScreenHeight));
 
-	mType = type;
+	mType = Entity::eVegetable;
 
 	Initialize();
 }
 
-Food::Food(Entity::Type type, Vector2 pos)
+Food::Food(Entity::Type type, Vector2 pos, int nutritionValue) :
+		Entity(pos, type), mNutritionValue(nutritionValue)
 {
-	mPos = pos;
-
-	mType = type;
-
 	Initialize();
 }
 
@@ -58,9 +60,9 @@ void Food::OnDeath()
 
 void Food::Initialize()
 {
-	mColor            = mType == Entity::eVegetable ? GREEN : RED;
+	mColor            = mType == Entity::eVegetable ? kVegetableColor : kMeatColor;
 	mBodyRadius       = 0.5f;
 	mPerceptionRadius = 0;
 
-	mSpoilageTimer.SetDelay(mType == Entity::eVegetable ? kVegetableSpoliageTime : kMeatSpoilageTime);
+	mSpoilageTimer.SetDelay(mType == Entity::eVegetable ? kVegetableSpoilageTime : kMeatSpoilageTime);
 }

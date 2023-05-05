@@ -11,8 +11,8 @@
 class Food : public Entity
 {
 public:
-	explicit Food(Entity::Type type = Entity::eVegetable);
-	Food(Entity::Type type, Vector2 pos);
+	Food();
+	Food(Entity::Type type, Vector2 pos, int nutritionValue);
 
 	void Update(float delta) override;
 	void Draw() override;
@@ -21,11 +21,15 @@ public:
 	void OnPerceptionCollisionEnter(Entity &other) override;
 	void OnDeath() override;
 
+	int GetNutritionValue() const override { return mNutritionValue; }
+
 private:
 	void Initialize();
 
 private:
 	Color mColor = {0, 0, 0, 0};
+
+	int mNutritionValue;
 
 	Timer mSpoilageTimer;
 };

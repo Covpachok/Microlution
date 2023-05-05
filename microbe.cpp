@@ -10,19 +10,55 @@
 #include "stuff/math.hpp"
 #include "entity_manager.hpp"
 #include "stuff/timer.hpp"
+#include "food.hpp"
+#include "stuff/global.hpp"
 
 using namespace std;
 
-Microbe::Microbe() :
+const int   kMinSatiety            = 0;
+const int   kSatietyDropValue      = 2;
+const int   kSatietyDropTime       = 5;
+const float kStarvationTimeToDeath = 30.f;
+const int   kStartingSatiety       = 10;
+
+const float kReproductionDelay = 15;
+
+/* RANDOMIZATION CONSTANTS */
+const int rMinSatiety     = 75;
+const int rMaxSatietyRand = 125;
+
+const float rMinMovementSpeed = Constants::CellSize * 2;
+const float rMaxMovementSpeed = rMinMovementSpeed * 1.5f;
+const float rMinRotationSpeed = 2;
+const float rMaxRotationSpeed = 4;
+
+const float rMinPerceptionRadius = 5;
+const float rMaxPerceptionRadius = 7.5f;
+
+const float rMinBodyRadius = 0.75f;
+const float rMaxBodyRadius = 1;
+
+const float rMinChangeDirectionTime = 5;
+const float rMaxChangeDirectionTime = 15;
+
+
+Microbe::Microbe(Entity::Type type) :
 		Entity(Vector2Zero())
 {
 	mPos.x = static_cast<float>(GetRandomValue(0, Constants::ScreenWidth));
 	mPos.y = static_cast<float>(GetRandomValue(0, Constants::ScreenHeight));
 
-	mType = static_cast<Type>(GetRandomValue(Entity::ePredator, Entity::eHerbivorous));
-	if ( mType == Entity::ePredator )
+	if ( type == eNone )
 	{
 		mType = static_cast<Type>(GetRandomValue(Entity::ePredator, Entity::eHerbivorous));
+		if ( mType == Entity::ePredator )
+		{
+			mType = static_cast<Type>(GetRandomValue(Entity::ePredator, Entity::eHerbivorous));
+		}
+	}
+	else
+	{
+		mType = type;
 	}
 
 	Initialize();
@@ -58,16 +94,46 @@ void Microbe::ChangeDirection(const Vector2 &newDirection)
 void Microbe::Update(float delta)
 {
 	mReproductionDelayTimer.Update(delta);
+
 	mChangeDirectionTimer.Update(delta);
 	if ( mChangeDirectionTimer.IsElapsed())
 	{
 		ChangeDirection();
 	}
 
+	/** FOOD RELATED */
+	mSatietyDropTimer.Update(delta);
+	if ( mSatietyDropTimer.IsElapsed())
+	{
+		mSatiety = max(mSatiety - kSatietyDropValue, kMinSatiety);
+		mSatietyDropTimer.Reset();
+	}
+
+	if ( mSatiety == kMinSatiety )
+	{
+		mStarvationTime += delta;
+	}
+	else
+	{
+		mStarvationTime = 0;
+	}
+
+	if ( mStarvationTime >= kStarvationTimeToDeath )
+	{
+		Kill();
+		return;
+	}
+
+//	mColor.b       = mOriginalColor.b * ( 1 - mSatiety / mMaxSatiety );
+	RecalculateMovementSpeed();
+
+	/** MOVEMENT */
+//	mCurrentMovementSpeed *= static_cast<float>(mSatiety) / static_cast<float>(mMaxSatiety);
 
 	Rotate(delta);
 	Move(delta);
 
+	/** DIRECTION BY STATE */
 	if ( mMovementState != MovementState::eWandering )
 	{
 		if ( mMovementState == MovementState::eChasing )
@@ -86,6 +152,13 @@ void Microbe::Update(float delta)
 
 void Microbe::OnBodyCollisionEnter(Entity &other)
 {
+	// Avoid stacking of several microbes on each other
+	if ( other.GetType() == Entity::ePredator || other.GetType() == Entity::eHerbivorous )
+	{
+		mPos = Vector2Add(mPos, Vector2Scale(Vector2Normalize(Vector2Subtract(mPos, other.GetPos())), 0.5f));
+		OnOutOfBounds();
+	}
+
 	if ( mType == Entity::ePredator )
 	{
 		switch ( other.GetType())
@@ -100,7 +173,11 @@ void Microbe::OnBodyCollisionEnter(Entity &other)
 				other.Kill();
 				break;
 			case eMeat:
-				other.Kill();
+				if ( SatedEnough())
+				{
+					return;
+				}
+				Eat(*dynamic_cast<Food *>(&other));
 				break;
 			default:
 				break;
@@ -120,7 +197,11 @@ void Microbe::OnBodyCollisionEnter(Entity &other)
 				}
 				break;
 			case eVegetable:
-				other.Kill();
+				if ( mMovementState == MovementState::eFleeing || SatedEnough())
+				{
+					return;
+				}
+				Eat(*dynamic_cast<Food *>(&other));
 				break;
 			default:
 				break;
@@ -130,20 +211,7 @@ void Microbe::OnBodyCollisionEnter(Entity &other)
 
 void Microbe::OnPerceptionCollisionEnter(Entity &other)
 {
-	/*
-	if ( other.GetType() != mType )
-	{
-		mPerceiveHostileMicrobe = true;
-		Vector2 pos      = other.GetPos();
-		float   distance = Vector2Distance(mPos, pos);
-		if ( distance <= mNearestHostileDistance )
-		{
-			mNearestHostileDistance = distance;
-			mNearestHostilePos      = pos;
-		}
-	}
-	 */
-
+#if 0
 	if ( other.GetType() != mType )
 	{
 		if ( other.GetType() == Entity::ePredator )
@@ -160,7 +228,7 @@ void Microbe::OnPerceptionCollisionEnter(Entity &other)
 		else
 		{
 			if (( mType == Entity::ePredator && other.GetType() == Entity::eVegetable ) ||
-			    ( mType == Entity::eVegetable && other.GetType() == Entity::eMeat ))
+				( mType == Entity::eVegetable && other.GetType() == Entity::eMeat ))
 			{
 				return;
 			}
@@ -196,6 +264,41 @@ void Microbe::OnPerceptionCollisionEnter(Entity &other)
 		}
 		mMovementState   = MovementState::eChasing;
 	}
+#endif
+
+	if ( ShouldFleeFrom(other.GetType()))
+	{
+		Vector2 pos      = other.GetPos();
+		float   distance = Vector2Distance(mPos, pos);
+		if ( distance <= mFleeingTargetDistance )
+		{
+			mFleeingTargetDistance = distance;
+			mFleeingTargetPos      = pos;
+		}
+		mMovementState   = MovementState::eFleeing;
+	}
+	else if ( ShouldChase(other.GetType()))
+	{
+		Vector2 pos      = other.GetPos();
+		float   distance = Vector2Distance(mPos, pos);
+		if ( distance <= mChasingTargetDistance )
+		{
+			mChasingTargetDistance = distance;
+			mChasingTargetPos      = pos;
+		}
+		mMovementState   = MovementState::eChasing;
+	}
+	else if ( ShouldReproduceWith(other.GetType()) && other.CanReproduce())
+	{
+		Vector2 pos      = other.GetPos();
+		float   distance = Vector2Distance(mPos, pos);
+		if ( distance <= mChasingTargetDistance )
+		{
+			mChasingTargetDistance = distance;
+			mChasingTargetPos      = pos;
+		}
+		mMovementState   = MovementState::eChasing;
+	}
 
 #if 0
 	if ( other.GetType() == Entity::ePredator && mType == Entity::eHerbivorous )
@@ -211,7 +314,9 @@ void Microbe::OnPerceptionCollisionEnter(Entity &other)
 
 std::string Microbe::ToString() const
 {
-	string ret = "Microbe - " + Entity::ToString();
+	string ret = "Microbe - " + Entity::ToString() + " food: " + to_string(mSatiety) + "/" + to_string(mMaxSatiety) +
+	             " starvation:" +
+	             to_string(mStarvationTime) + "/" + to_string(kStarvationTimeToDeath);
 
 	return ret;
 }
@@ -220,8 +325,8 @@ void Microbe::Move(float delta)
 {
 	if ( mShouldMove )
 	{
-		mVelocity.x = mMovementSpeed * mLookingDirection.x;
-		mVelocity.y = mMovementSpeed * mLookingDirection.y;
+		mVelocity.x = mCurrentMovementSpeed * mLookingDirection.x;
+		mVelocity.y = mCurrentMovementSpeed * mLookingDirection.y;
 	}
 
 	mAcceleration.x = -mVelocity.x * 0.8f;
@@ -232,7 +337,7 @@ void Microbe::Move(float delta)
 	mPos.x += mVelocity.x * delta;
 	mPos.y += mVelocity.y * delta;
 
-	OutOfBoundsCheck();
+	OnOutOfBounds();
 }
 
 void Microbe::Rotate(float delta)
@@ -264,50 +369,64 @@ void Microbe::Draw()
 
 	DrawTexturePro(texture, src, dest, origin, mRotationAngle, mColor);
 
-#if 0
-	/* DEBUG LOOK DIRECTION */
-	Vector2 lineEnd = {mPos.x + ( mLookingDirection.x * Constants::CellSize * 2.5f ),
-	                   mPos.y + ( mLookingDirection.y * Constants::CellSize * 2.5f )};
+#if 1
+	if ( GlobalDebug::gDrawDebugDirection )
+	{
+		Vector2 lineEnd = {mPos.x + ( mLookingDirection.x * Constants::CellSize * 2.5f ),
+		                   mPos.y + ( mLookingDirection.y * Constants::CellSize * 2.5f )};
 
-	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, GREEN);
+		DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, GREEN);
 
-	lineEnd = {mPos.x + ( mTargetDirection.x * Constants::CellSize * 2 ),
-	           mPos.y + ( mTargetDirection.y * Constants::CellSize * 2 )};
+		lineEnd = {mPos.x + ( mTargetDirection.x * Constants::CellSize * 2 ),
+		           mPos.y + ( mTargetDirection.y * Constants::CellSize * 2 )};
 
-	DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, BLUE);
-#endif
+		DrawLine((int) mPos.x, (int) mPos.y, (int) lineEnd.x, (int) lineEnd.y, BLUE);
+	}
 
-#if 0
-	/* DEBUG PERCEPTION RADIUS */
-	DrawCircleSectorLines(mPos, mPerceptionRadius * Constants::CellSize, 0, 360, 18, RED);
+	if ( GlobalDebug::gDrawDebugPerceptionRadius )
+	{
+		DrawCircleSectorLines(mPos, mPerceptionRadius * Constants::CellSize, 0, 360, 18, {255, 0, 0, 128});
+	}
 #endif
 }
 
 void Microbe::Initialize()
 {
-	mMovementSpeed = ( static_cast<float>(GetRandomValue(Constants::CellSize * 10, Constants::CellSize * 16)) / 10.f );
-	mRotationSpeed = static_cast<float>(GetRandomValue(100, 300)) / 100.f;
+	mPerceptionRadius = GetRandomFloat(rMinPerceptionRadius, rMaxPerceptionRadius);
+	mBodyRadius       = GetRandomFloat(rMinBodyRadius, rMaxBodyRadius);
 
-	mPerceptionRadius = static_cast<float>(GetRandomValue(30, 60)) / 10.f;
 
-	mChangeDirectionTimer.SetDelay(static_cast<float>(GetRandomValue(20, 50)) / 10.f);
-	mReproductionDelayTimer.SetDelay(30);
+	/* TIMERS */
+	mChangeDirectionTimer.SetDelay(GetRandomFloat(rMinChangeDirectionTime, rMaxChangeDirectionTime));
+	mReproductionDelayTimer.SetDelay(kReproductionDelay);
+	mSatietyDropTimer.SetDelay(kSatietyDropTime);
+
+	mMaxSatiety = GetRandomValue(rMinSatiety, rMaxSatietyRand);
+	mSatiety    = kStartingSatiety;
+
+
+	/* MOVEMENT */
+	mMovementSpeed = GetRandomFloat(rMinMovementSpeed, rMaxMovementSpeed);
+	mRotationSpeed = GetRandomFloat(rMinRotationSpeed, rMaxRotationSpeed);
+
+	RecalculateMovementSpeed();
 
 	mAcceleration      = Vector2Zero();
 	mRotationAngle     = PI / 4;
-	mRotationDirection = 1;
-	mShouldMove        = true;
+	mRotationDirection = 1; // -1 - left / 1 - right
+
+	mShouldMove = true;
 
 	ChangeDirection();
 
-#if 1
-	/* Balanced color value calculation */
+
+	/* COLOR */
 	float     ratioR, ratioG, ratioB;
 	const int maxColorValue = 255;
 
 	float minR = mType == ePredator ? maxColorValue / 2 : 0;
 	float minG = mType == eHerbivorous ? maxColorValue / 2 : 0;
-	float minB = 0;
+	float minB = maxColorValue / 4;
 
 	float maxR = mType == ePredator ? maxColorValue : 0;
 	float maxG = mType == eHerbivorous ? maxColorValue : 0;
@@ -330,39 +449,28 @@ void Microbe::Initialize()
 	g = static_cast<uint8_t>(ratioG * 255);
 	b = static_cast<uint8_t>(ratioB * 255);
 
-	mColor = {r, g, b, 215};
-#endif
-
-#if 0
-	/* Dumb color value calculation */
-
-	uint8_t   r, g, b;
-	const int maxColorValue = 255;
-	r      = GetRandomValue(0, maxColorValue);
-	g      = GetRandomValue(0, maxColorValue);
-	b      = GetRandomValue(0, maxColorValue);
-	mColor = {r, g, b, 215};
-#endif
+	mColor         = {r, g, b, 215};
+	mOriginalColor = mColor;
 }
 
-void Microbe::OutOfBoundsCheck()
+void Microbe::OnOutOfBounds()
 {
 	if ( mPos.x > Constants::ScreenWidth )
 	{
-		mPos.x = 0;
+		mPos.x = 0.5f;
 	}
 	else if ( mPos.x < 0 )
 	{
-		mPos.x = Constants::ScreenWidth;
+		mPos.x = Constants::ScreenWidth - 0.5f;
 	}
 
 	if ( mPos.y > Constants::ScreenHeight )
 	{
-		mPos.y = 0;
+		mPos.y = 0.5f;
 	}
 	else if ( mPos.y < 0 )
 	{
-		mPos.y = Constants::ScreenHeight;
+		mPos.y = Constants::ScreenHeight - 0.5f;
 	}
 #if 0
 	bool    shouldChangeDirection = false;
@@ -408,6 +516,19 @@ void Microbe::Reproduce(Microbe &other)
 	other.ResetReproductionTimer();
 	ResetReproductionTimer();
 
+	other.ReduceSatiety(kMicrobeNutritionValue);
+	ReduceSatiety(kMicrobeNutritionValue);
+
 	EntityManager::GetInstance().SpawnMicrobe(new Microbe(mPos, mType));
+	if ( mType == eHerbivorous )
+	{
+		EntityManager::GetInstance().SpawnMicrobe(new Microbe(mPos, mType));
+	}
+}
+
+void Microbe::Eat(Food &food)
+{
+	mSatiety = min(mSatiety + food.GetNutritionValue(), mMaxSatiety);
+	food.Kill();
 }
 

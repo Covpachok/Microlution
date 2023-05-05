@@ -10,9 +10,9 @@
 #include "constants.hpp"
 #include "microbe.hpp"
 #include "stuff/logger.hpp"
-#include "raymath.h"
+#include "stuff/global.hpp"
 
-const size_t gMicrobesAmount = 10;
+using namespace std;
 
 Game::Game() :
 		mPause(false)
@@ -34,8 +34,6 @@ Game::Game() :
 
 	mGrid.RegisterEntities(mEntityManager.GetEntityList());
 	DEBUG_LOG_INFO(std::to_string(Constants::GridWidth) + " " + std::to_string(Constants::GridHeight));
-
-	mEntitySpawnTimer.SetDelay(10);
 }
 
 Game::~Game()
@@ -77,29 +75,81 @@ void Game::HandleInput()
 		mPause = !mPause;
 	}
 
-	if ( IsKeyPressed(KEY_ENTER))
+	using namespace GlobalDebug;
+
+	if ( IsKeyDown(KEY_LEFT_ALT))
 	{
-//		SpawnMicrobes(100);
+		if ( IsKeyPressed(KEY_G))
+		{
+			gDrawDebugGrid = !gDrawDebugGrid;
+		}
+
+		if ( IsKeyPressed(KEY_P))
+		{
+			gDrawDebugPerceptionRadius = !gDrawDebugPerceptionRadius;
+		}
+
+		if ( IsKeyPressed(KEY_D))
+		{
+			gDrawDebugDirection = !gDrawDebugDirection;
+		}
 	}
 
-	if ( IsKeyPressed(KEY_EQUAL))
+	/* SPEED */
+	if ( IsKeyDown(KEY_MINUS))
 	{
-		mTEMPRadius += 0.1f;
-	}
-	if ( IsKeyPressed(KEY_MINUS))
-	{
-		mTEMPRadius -= 0.1f;
+		mGameSpeed = max(mGameSpeed - 0.01f, 0.f);
 	}
 
-	if ( IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
+	if ( IsKeyDown(KEY_EQUAL))
 	{
-		mGrid.RegisterOnDebugGrid(GetMousePosition(), mTEMPRadius);
+		mGameSpeed += 0.01f;
+	}
+
+	if ( IsKeyPressed(KEY_ZERO))
+	{
+		mGameSpeed = 1;
+	}
+
+	/* Microbe spawning */
+	if ( IsKeyDown(KEY_LEFT_CONTROL))
+	{
+		if ( IsKeyDown(KEY_LEFT_SHIFT))
+		{
+			if ( IsKeyPressed(KEY_H))
+			{
+				for ( size_t i = 0; i < 10; ++i )
+				{
+					mEntityManager.SpawnMicrobe(new Microbe(Entity::eHerbivorous));
+				}
+			}
+
+			if ( IsKeyPressed(KEY_P))
+			{
+				for ( size_t i = 0; i < 10; ++i )
+				{
+					mEntityManager.SpawnMicrobe(new Microbe(Entity::ePredator));
+				}
+			}
+		}
+		else
+		{
+			if ( IsKeyPressed(KEY_H))
+			{
+				mEntityManager.SpawnMicrobe(new Microbe(Entity::eHerbivorous));
+			}
+
+			if ( IsKeyPressed(KEY_P))
+			{
+				mEntityManager.SpawnMicrobe(new Microbe(Entity::ePredator));
+			}
+		}
 	}
 }
 
 void Game::Update()
 {
-	float delta = GetFrameTime();
+	float delta = GetFrameTime() * mGameSpeed;
 	mEntityManager.Update(delta, mGrid);
 }
 
@@ -109,16 +159,30 @@ void Game::Draw()
 
 	ClearBackground(WHITE);
 
-//	mGrid.Draw();
 	auto &entites = mEntityManager.GetEntityList();
+
+	if ( GlobalDebug::gDrawDebugGrid )
+	{
+		mGrid.Draw();
+	}
 
 	for ( auto &entity: entites )
 	{
 		entity->Draw();
 	}
 
-	DrawFPS(0, 0);
-	DrawText(std::to_string(entites.size()).c_str(), 0, 20, 30, RED);
+	DrawFPS(1, 1);
+
+	std::string debugText =
+			            "E:" + to_string(entites.size()) + "\nH:" + to_string(mEntityManager.GetHerbivorousCount()) +
+			            "\nP:" +
+			            to_string(mEntityManager.GetPredatorCount()) + "\nV:" +
+			            to_string(mEntityManager.GetVegetableCount()) + "\nM:" +
+			            to_string(mEntityManager.GetMeatCount());
+
+	DrawText(debugText.c_str(), 1, 20, 20, BLACK);
+
+	DrawText(to_string(mGameSpeed).c_str(), Constants::ScreenWidth - 50, 1, 20, BLUE);
 
 	EndDrawing();
 }
