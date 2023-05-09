@@ -1,7 +1,3 @@
-//
-// Created by heylc on 11.04.2023.
-//
-
 #include <raylib.h>
 
 #include <memory>
@@ -17,23 +13,13 @@ using namespace std;
 Game::Game() :
 		mPause(false)
 {
-	InitWindow(Constants::ScreenWidth, Constants::ScreenHeight, "Microlution");
-//	for ( int i = 0; i < gMicrobesAmount; ++i )
-//	{
-//		mEntities.push_back(std::shared_ptr<Entity>(new Microbe()));
-//	}
+	using namespace Constants;
 
-//	SpawnFood(10);
-//	for ( auto &entityPtr: mEntities )
-//	{
-//		entityPtr = std::shared_ptr<Entity>(new Microbe());
-//	}
+	InitWindow(ScreenWidth, ScreenHeight, "Microlution");
 
-	/* TEMPORARY CODE, REPLACE IT */
 	mTextureHandler.LoadTexture("../assets/microbe_texture.png");
 
 	mGrid.RegisterEntities(mEntityManager.GetEntityList());
-	DEBUG_LOG_INFO(std::to_string(Constants::GridWidth) + " " + std::to_string(Constants::GridHeight));
 }
 
 Game::~Game()
@@ -98,12 +84,12 @@ void Game::HandleInput()
 	/* SPEED */
 	if ( IsKeyDown(KEY_MINUS))
 	{
-		mGameSpeed = max(mGameSpeed - 0.01f, 0.f);
+		mGameSpeed = max(mGameSpeed - ( 10.f * GetFrameTime()), 0.f);
 	}
 
 	if ( IsKeyDown(KEY_EQUAL))
 	{
-		mGameSpeed += 0.01f;
+		mGameSpeed += 10.f * GetFrameTime();
 	}
 
 	if ( IsKeyPressed(KEY_ZERO))
@@ -159,22 +145,20 @@ void Game::Draw()
 
 	ClearBackground(WHITE);
 
-	auto &entites = mEntityManager.GetEntityList();
-
 	if ( GlobalDebug::gDrawDebugGrid )
 	{
 		mGrid.Draw();
 	}
 
-	for ( auto &entity: entites )
+	auto &entityList = mEntityManager.GetEntityList();
+
+	for ( auto &entity: entityList )
 	{
 		entity->Draw();
 	}
 
-	DrawFPS(1, 1);
-
 	std::string debugText =
-			            "E:" + to_string(entites.size()) + "\nH:" + to_string(mEntityManager.GetHerbivorousCount()) +
+			            "E:" + to_string(entityList.size()) + "\nH:" + to_string(mEntityManager.GetHerbivorousCount()) +
 			            "\nP:" +
 			            to_string(mEntityManager.GetPredatorCount()) + "\nV:" +
 			            to_string(mEntityManager.GetVegetableCount()) + "\nM:" +
@@ -183,6 +167,8 @@ void Game::Draw()
 	DrawText(debugText.c_str(), 1, 20, 20, BLACK);
 
 	DrawText(to_string(mGameSpeed).c_str(), Constants::ScreenWidth - 50, 1, 20, BLUE);
+
+	DrawFPS(1, 1);
 
 	EndDrawing();
 }

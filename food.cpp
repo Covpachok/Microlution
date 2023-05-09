@@ -1,15 +1,10 @@
-//
-// Created by heylc on 26.04.2023.
-//
-
 #include "food.hpp"
-#include "stuff/logger.hpp"
 
-const float      kMeatSpoilageTime        = 15;
-const float      kVegetableSpoilageTime   = 60;
-const Color      kVegetableColor          = {0, 255, 0, 100};
-const Color      kMeatColor               = {255, 0, 0, 100};
-static const int kVegetableNutritionValue = 10;
+const float kMeatSpoilageTime        = 15;
+const float kVegetableSpoilageTime   = 60;
+const Color kVegetableColor          = {0, 255, 0, 100};
+const Color kMeatColor               = {255, 0, 0, 100};
+const int   kVegetableNutritionValue = 10;
 
 
 Food::Food() :
@@ -40,17 +35,7 @@ void Food::Update(float delta)
 
 void Food::Draw()
 {
-	DrawCircleSector(mPos, mBodyRadius * Constants::CellSize, 0, 360, 8, mColor);
-}
-
-void Food::OnBodyCollisionEnter(Entity &other)
-{
-
-}
-
-void Food::OnPerceptionCollisionEnter(Entity &other)
-{
-
+	DrawCircleSector(mPos, mBodyRadius * Constants::CellSize, 0, 360, 6, mColor);
 }
 
 void Food::OnDeath()
@@ -60,8 +45,17 @@ void Food::OnDeath()
 
 void Food::Initialize()
 {
-	mColor            = mType == Entity::eVegetable ? kVegetableColor : kMeatColor;
-	mBodyRadius       = 0.5f;
+	if(mType == Entity::eVegetable)
+	{
+		mColor      = kVegetableColor;
+		mBodyRadius = 0.5f;
+	}
+	else
+	{
+		mColor      = kMeatColor;
+		mBodyRadius = static_cast<float>(mNutritionValue) / 50.f;
+	}
+
 	mPerceptionRadius = 0;
 
 	mSpoilageTimer.SetDelay(mType == Entity::eVegetable ? kVegetableSpoilageTime : kMeatSpoilageTime);

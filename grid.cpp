@@ -1,7 +1,3 @@
-//
-// Created by heylc on 12.04.2023.
-//
-
 #include "grid.hpp"
 
 #include <cassert>
@@ -10,18 +6,8 @@
 #include "entity.hpp"
 #include "constants.hpp"
 #include "stuff/math.hpp"
-#include "stuff/logger.hpp"
 
-Grid::Grid()
-{
-	for ( auto &row: mDebugGrid )
-	{
-		for ( auto &cell: row )
-		{
-			cell = false;
-		}
-	}
-}
+Grid::Grid() = default;
 
 bool InsideCircle(Vector2 center, Vector2 tile, float radius)
 {
@@ -34,24 +20,25 @@ bool InsideCircle(Vector2 center, Vector2 tile, float radius)
 void Grid::RegisterEntity(Entity *entity)
 {
 	Vector2 pos      = entity->GetPos();
-	float   bodySize = entity->GetBodySize();
+	float   bodySize = entity->GetBodySize(); // Actually is a radius
 
-	Vector2   convPos = {pos.x / Constants::CellSize, pos.y / Constants::CellSize};
-	int       size    = round(bodySize);
-	for ( int y       = -size; y <= size; ++y )
+	Vector2 entityConvertedPos = {pos.x / Constants::CellSize, pos.y / Constants::CellSize};
+
+	int       size = static_cast<int>(round(bodySize));
+	for ( int y    = -size; y <= size; ++y )
 	{
 		for ( int x = -size; x <= size; ++x )
 		{
-			IntVec2 gridPos  = ToGridPosition(pos) + IntVec2{x, y};
-			Vector2 relative = {floor(convPos.x + x) + 0.5f,
-			                    floor(convPos.y + y) + 0.5f};
-			Vector2 center   = convPos;
-			if ( InsideCircle(center, relative, bodySize))
-			{
-				int nx = std::min(std::max(gridPos.x, 0), (int) Constants::GridWidth - 1);
-				int ny = std::min(std::max(gridPos.y, 0), (int) Constants::GridHeight - 1);
+			IntVec2 gridPos = ToGridPosition(pos) + IntVec2{x, y};
 
-				mGrid[ny][nx].insert(entity);
+			Vector2 relativePos = {floor(entityConvertedPos.x + static_cast<float>(x)) + 0.5f,
+			                       floor(entityConvertedPos.y + static_cast<float>(y)) + 0.5f};
+
+			if ( InsideCircle(entityConvertedPos, relativePos, bodySize))
+			{
+				gridPos = FitOnGrid(gridPos);
+
+				mGrid[gridPos.y][gridPos.x].insert(entity);
 			}
 		}
 	}
@@ -153,19 +140,19 @@ const Grid::EntitySet &Grid::GetEntities(const Vector2 &pos)
 
 void Grid::CheckCollision(Entity *checkEntity)
 {
-	IntVec2 cellPos    = ToGridPosition(checkEntity->GetPos());
-	int     cellRadius = ceil(checkEntity->GetPerceptionRadius());
+	IntVec2 gridPos    = ToGridPosition(checkEntity->GetPos());
+	int     gridRadius = ceil(checkEntity->GetPerceptionRadius());
 
-	std::list<Entity *> ret;
-	IntVec2             curr;
+	IntVec2 currentPos;
 
-	for ( int y = -cellRadius; y <= cellRadius; ++y )
+	for ( int y = -gridRadius; y <= gridRadius; ++y )
 	{
-		for ( int x = -cellRadius; x <= cellRadius; ++x )
+		for ( int x = -gridRadius; x <= gridRadius; ++x )
 		{
-			curr = {cellPos.x + x, cellPos.y + y};
-			curr = FitOnGrid(curr);
-			for ( auto &otherEntity: mGrid[curr.y][curr.x] )
+			currentPos = {gridPos.x + x, gridPos.y + y};
+			currentPos = FitOnGrid(currentPos);
+
+			for ( auto &otherEntity: mGrid[currentPos.y][currentPos.x] )
 			{
 				if ( otherEntity == checkEntity || otherEntity == nullptr || otherEntity->IsDead())
 				{
@@ -212,11 +199,6 @@ void Grid::Draw()
 			const float size  = Constants::CellSize;
 			Vector2     start = {x * size, y * size};
 
-			if ( mDebugGrid[y][x] )
-			{
-				DrawRectangleV(start, {size, size}, MAGENTA);
-			}
-
 			if ( mGrid[y][x].empty())
 			{
 				continue;
@@ -240,61 +222,29 @@ void Grid::ClearRegisteredEntities()
 
 IntVec2 Grid::FitOnGrid(IntVec2 pos)
 {
-#if 0
+//	pos.x = std::min(std::max(pos.x, 0), (int) Constants::GridWidth - 1);
+//	pos.y = std::min(std::max(pos.y, 0), (int) Constants::GridHeight - 1);
+
+	const int gridWidth  = Constants::GridWidth;
+	const int gridHeight = Constants::GridHeight;
+
+	if ( pos.x >= gridWidth )
+	{
+		pos.x -= gridWidth;
+	}
 	if ( pos.x < 0 )
 	{
-		pos.x = Constants::GridWidth - 1;
-	}
-	else if ( pos.x >= Constants::GridWidth )
-	{
-		pos.x = 0;
+		pos.x += gridWidth;
 	}
 
+	if ( pos.y >= gridHeight )
+	{
+		pos.y -= gridHeight;
+	}
 	if ( pos.y < 0 )
 	{
-		pos.y = Constants::GridHeight - 1;
-	}
-	else if ( pos.y >= Constants::GridHeight )
-	{
-		pos.y = 0;
+		pos.y += gridHeight;
 	}
 
 	return pos;
-#endif
-
-	pos.x = std::min(std::max(pos.x, 0), (int) Constants::GridWidth - 1);
-	pos.y = std::min(std::max(pos.y, 0), (int) Constants::GridHeight - 1);
-
-	return pos;
-}
-
-void Grid::RegisterOnDebugGrid(Vector2 pos, float radius)
-{
-	for ( auto &row: mDebugGrid )
-	{
-		for ( auto &cell: row )
-		{
-			cell = false;
-		}
-	}
-
-	Vector2   convPos = {pos.x / Constants::CellSize, pos.y / Constants::CellSize};
-	int       size    = round(radius);
-	for ( int y       = -size; y <= size; ++y )
-	{
-		for ( int x = -size; x <= size; ++x )
-		{
-			IntVec2 gridPos  = ToGridPosition(pos) + IntVec2{x, y};
-			Vector2 relative = {floor(convPos.x + x) + 0.5f,
-			                    floor(convPos.y + y) + 0.5f};
-			Vector2 center   = convPos;
-			if ( InsideCircle(center, relative, radius))
-			{
-				int nx = std::min(std::max(gridPos.x, 0), (int) Constants::GridWidth - 1);
-				int ny = std::min(std::max(gridPos.y, 0), (int) Constants::GridHeight - 1);
-
-				mDebugGrid[ny][nx] = true;
-			}
-		}
-	}
 }

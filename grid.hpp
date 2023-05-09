@@ -1,7 +1,3 @@
-//
-// Created by heylc on 12.04.2023.
-//
-
 #ifndef MICROLUTION_GRID_HPP
 #define MICROLUTION_GRID_HPP
 
@@ -30,8 +26,6 @@ public:
 	void RegisterEntities(std::list<std::shared_ptr<Entity>> &entities);
 	void RegisterEntity(Entity *entity);
 
-	void RegisterOnDebugGrid(Vector2 pos, float radius);
-
 	void ClearRegisteredEntities();
 
 	const EntitySet &GetEntities(const Vector2 &pos);
@@ -48,9 +42,7 @@ private:
 	static int CeilToGridUnits(float n) { return static_cast<int>(std::ceil(n / Constants::CellSize)); }
 
 private:
-	// replace this with an actual array
 	std::array<std::array<EntitySet, Constants::GridWidth>, Constants::GridHeight> mGrid;
-	std::array<std::array<bool, Constants::GridWidth>, Constants::GridHeight> mDebugGrid;
 };
 
 

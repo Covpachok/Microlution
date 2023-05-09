@@ -1,28 +1,19 @@
-//
-// Created by heylc on 26.04.2023.
-//
-
 #ifndef MICROLUTION_ENTITY_MANAGER_HPP
 #define MICROLUTION_ENTITY_MANAGER_HPP
 
 #include <list>
 #include <memory>
-//#include "entity.hpp"
 #include "stuff/timer.hpp"
-//#include "microbe.hpp"
-//#include "food.hpp"
-//#include "grid.hpp"
 
+// Forward declarations
 class Microbe;
-
 class Food;
-
 class Entity;
-
 class Grid;
 
 class EntityManager
 {
+	// Singleton
 	static EntityManager *mInstance;
 
 public:
@@ -33,10 +24,13 @@ public:
 
 	void Update(float delta, Grid &grid);
 
+	// When breeding microbes need to spawn their brood
 	void SpawnMicrobe(Microbe *newMicrobe);
 
 	static EntityManager &GetInstance() { return *mInstance; }
 
+	// Game need an EntityList to draw entities on the screen,
+	// however EntityManager can also handle this, so idk
 	EntityList &GetEntityList() { return mEntities; }
 
 	size_t GetVegetableCount() const { return mVegetableCount; }
@@ -45,23 +39,22 @@ public:
 	size_t GetPredatorCount() const { return mPredatorCount; }
 
 private:
-	void SpawnVegetables(size_t amount); // randomly
+	// Randomly spawns vegetable
+	void SpawnVegetables(size_t amount);
+
+	// Meat can spawn only when microbe dies, also it have nutrition value of dead microbe
 	void SpawnMeat(Entity *from);
+
+	// Destroys dead entities
 	void DeadEntitiesCleanup();
-	void DestroyEntities(); // destroys only dead entities, and spawns meat on their places
 
 private:
 	EntityList mEntities;
-//	FoodList mFood;
-
-//	MicrobeList mMicrobesPool;
-//	FoodList mFoodPool;
 
 	size_t mVegetablesSpawnAmount;
 
-	size_t mVegetableCount = 0;
-	size_t mMeatCount      = 0;
-
+	size_t mVegetableCount   = 0;
+	size_t mMeatCount        = 0;
 	size_t mHerbivorousCount = 0;
 	size_t mPredatorCount    = 0;
 

@@ -1,13 +1,11 @@
-//
-// Created by heylc on 12.01.2023.
-//
-
 #ifndef MICROLUTION_UTILS_HPP
 #define MICROLUTION_UTILS_HPP
 
 #include "raylib.h"
 #include <iostream>
 #include <vector>
+#include <cassert>
+#include "logger.hpp"
 
 template<typename T>
 using Array2D = std::vector<std::vector<T>>;
@@ -23,10 +21,7 @@ public:
 	TextureHandler() :
 			mTexture()
 	{
-		if ( sInstance != nullptr )
-		{
-			return;
-		}
+		assert(sInstance == nullptr);
 		sInstance = this;
 	}
 
@@ -39,9 +34,13 @@ public:
 	{
 		Image image = LoadImage(texturePath.c_str());
 
+		assert(image.data != nullptr);
+
 		mTexture = LoadTextureFromImage(image);
 
 		UnloadImage(image);
+
+		assert(mTexture.id > 0);
 	}
 
 	const Texture2D &GetTexture() const

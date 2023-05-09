@@ -1,7 +1,3 @@
-//
-// Created by heylc on 26.04.2023.
-//
-
 #include "entity_manager.hpp"
 #include <cassert>
 #include "entity.hpp"
@@ -12,17 +8,20 @@
 
 EntityManager *EntityManager::mInstance = nullptr;
 
-const size_t kVegetablesSpawnAmount  = 20;
-const size_t kHerbivorousSpawnAmount = 40;
+const size_t kVegetablesSpawnAmount  = 300;
+const size_t kHerbivorousSpawnAmount = 64;
 const size_t kPredatorSpawnAmount    = 8;
+
+const float kSpawnVegetableDelay = 8;
 
 EntityManager::EntityManager()
 {
 	assert(mInstance == nullptr);
 	mInstance = this;
 
-	mSpawnVegetablesTimer.SetDelay(10);
+	mSpawnVegetablesTimer.SetDelay(kSpawnVegetableDelay);
 	SpawnVegetables(kVegetablesSpawnAmount);
+	mVegetablesSpawnAmount = kVegetablesSpawnAmount;
 
 	for ( size_t i = 0; i < kPredatorSpawnAmount; ++i )
 	{
@@ -33,12 +32,11 @@ EntityManager::EntityManager()
 	{
 		SpawnMicrobe(new Microbe(Entity::eHerbivorous));
 	}
-
-	mVegetablesSpawnAmount = mHerbivorousCount / 2;
 }
 
 void EntityManager::Update(float delta, Grid &grid)
 {
+	// Spawning vegetables when timer allows to
 	mSpawnVegetablesTimer.Update(delta);
 	if ( mSpawnVegetablesTimer.IsElapsed())
 	{
@@ -46,6 +44,7 @@ void EntityManager::Update(float delta, Grid &grid)
 		mSpawnVegetablesTimer.Reset();
 	}
 
+	// Updating all alive entities
 	for ( auto &entity: mEntities )
 	{
 		if ( entity->IsDead())
@@ -56,8 +55,10 @@ void EntityManager::Update(float delta, Grid &grid)
 		entity->Update(delta);
 	}
 
+	// Grid handles collisions, so we need to register entities on it
 	grid.RegisterEntities(mEntities);
 
+	// Checking collisions of all the entities
 	for ( auto &entity: mEntities )
 	{
 		if ( entity->IsDead())
@@ -69,7 +70,8 @@ void EntityManager::Update(float delta, Grid &grid)
 
 	DeadEntitiesCleanup();
 
-	mVegetablesSpawnAmount = mHerbivorousCount / 2;
+	// Better to spawn constant amount of vegetables
+//	mVegetablesSpawnAmount = static_cast<int>(std::ceil(static_cast<float>(mHerbivorousCount) / 2.f));
 }
 
 void EntityManager::SpawnMicrobe(Microbe *newMicrobe)
@@ -92,14 +94,14 @@ void EntityManager::SpawnVegetables(size_t amount)
 	mVegetableCount += amount;
 	for ( size_t i = 0; i < amount; ++i )
 	{
-		mEntities.push_back(std::shared_ptr<Entity>(new Food()));
+		mEntities.push_front(std::shared_ptr<Entity>(new Food()));
 	}
 }
 
 void EntityManager::SpawnMeat(Entity *from)
 {
 	++mMeatCount;
-	mEntities.push_back(std::shared_ptr<Entity>(new Food(Entity::eMeat, from->GetPos(), from->GetNutritionValue())));
+	mEntities.push_front(std::shared_ptr<Entity>(new Food(Entity::eMeat, from->GetPos(), from->GetNutritionValue())));
 }
 
 void EntityManager::DeadEntitiesCleanup()

@@ -1,7 +1,3 @@
-//
-// Created by heylc on 16.04.2023.
-//
-
 #include "entity.hpp"
 #include "stuff/logger.hpp"
 

@@ -1,7 +1,3 @@
-//
-// Created by heylc on 02.04.2023.
-//
-
 #ifndef MICROLUTION_MICROBE_HPP
 #define MICROLUTION_MICROBE_HPP
 
@@ -53,7 +49,7 @@ private:
 	void RecalculateMovementSpeed() { mCurrentMovementSpeed = mMovementSpeed * ( 1.25f - SatietyPercentage()); }
 
 	float SatietyPercentage() const { return static_cast<float>(mSatiety) / static_cast<float>(mMaxSatiety); }
-	bool SatedEnough() const { return SatietyPercentage() >= 0.5f; }
+	bool SatedEnough() const { return SatietyPercentage() >= 0.75f; }
 
 	bool ShouldFleeFrom(Type other) const { return mType == eHerbivorous && other == ePredator; }
 	bool ShouldChase(Type other) const
@@ -89,11 +85,8 @@ protected:
 	bool mShouldMove = true;
 	/* ================== */
 
-	float   mFleeingTargetDistance = 1000;
-	Vector2 mFleeingTargetPos      = {0, 0};
-
-	float   mChasingTargetDistance = 1000;
-	Vector2 mChasingTargetPos      = {0, 0};
+	Entity *mPerceptionCollidedEntity = nullptr;
+	float   mPerceptionCollidedDistance = 1000;
 
 	MovementState mMovementState = MovementState::eWandering;
 
@@ -113,6 +106,8 @@ protected:
 	Timer mChangeDirectionTimer;
 	Timer mSatietyDropTimer;
 	Timer mReproductionDelayTimer;
+
+	bool mPassBoundsPrevFrame = false;
 	/* ======================= */
 };
 

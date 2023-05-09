@@ -1,7 +1,3 @@
-//
-// Created by heylc on 18.04.2023.
-//
-
 #ifndef MICROLUTION_TIMER_HPP
 #define MICROLUTION_TIMER_HPP
 
@@ -10,7 +6,7 @@
 class Timer
 {
 public:
-	Timer(float delayInSeconds = 0) :
+	explicit Timer(float delayInSeconds = 0) :
 			mDelay(delayInSeconds) {}
 
 	void Update(float delta)

@@ -1,7 +1,3 @@
-//
-// Created by heylc on 26.04.2023.
-//
-
 #ifndef MICROLUTION_FOOD_HPP
 #define MICROLUTION_FOOD_HPP
 
@@ -17,8 +13,8 @@ public:
 	void Update(float delta) override;
 	void Draw() override;
 
-	void OnBodyCollisionEnter(Entity &other) override;
-	void OnPerceptionCollisionEnter(Entity &other) override;
+	void OnBodyCollisionEnter(Entity &other) override {}
+	void OnPerceptionCollisionEnter(Entity &other) override {}
 	void OnDeath() override;
 
 	int GetNutritionValue() const override { return mNutritionValue; }

@@ -1,7 +1,3 @@
-//
-// Created by heylc on 05.05.2023.
-//
-
 #ifndef MICROLUTION_GLOBAL_HPP
 #define MICROLUTION_GLOBAL_HPP
 

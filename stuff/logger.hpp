@@ -1,7 +1,3 @@
-//
-// Created by heylc on 14.01.2023.
-//
-
 #ifndef MICROLUTION_LOGGER_HPP
 #define MICROLUTION_LOGGER_HPP
 

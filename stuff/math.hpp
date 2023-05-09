@@ -1,7 +1,3 @@
-//
-// Created by heylc on 18.04.2023.
-//
-
 #ifndef MICROLUTION_MATH_HPP
 #define MICROLUTION_MATH_HPP
 

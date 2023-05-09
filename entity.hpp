@@ -1,7 +1,3 @@
-//
-// Created by heylc on 11.04.2023.
-//
-
 #ifndef MICROLUTION_ENTITY_HPP
 #define MICROLUTION_ENTITY_HPP
 
@@ -34,13 +30,6 @@ public:
 
 	virtual void OnBodyCollisionEnter(Entity &other) = 0;
 	virtual void OnPerceptionCollisionEnter(Entity &other) = 0;
-	virtual void OnDeath() = 0;
-
-	void Kill()
-	{
-		mIsDead = true;
-		OnDeath();
-	}
 
 	Type GetType() const { return mType; }
 	const Vector2 &GetPos() const { return mPos; }
@@ -49,7 +38,14 @@ public:
 	float GetBodySize() const { return mBodyRadius * 2; }
 	float GetPerceptionRadius() const { return mPerceptionRadius; }
 
-	virtual int GetNutritionValue() const = 0;
+	virtual int GetNutritionValue() const = 0;virtual void OnDeath() = 0;
+
+	void Kill()
+	{
+		mIsDead = true;
+		OnDeath();
+	}
+
 
 	bool IsDead() const { return mIsDead; }
 
