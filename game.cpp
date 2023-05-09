@@ -82,14 +82,14 @@ void Game::HandleInput()
 	}
 
 	/* SPEED */
-	if ( IsKeyDown(KEY_MINUS))
+	if ( IsKeyPressed(KEY_MINUS))
 	{
-		mGameSpeed = max(mGameSpeed - ( 10.f * GetFrameTime()), 0.f);
+		mGameSpeed = std::max(mGameSpeed - 0.5f, 0.f);
 	}
 
-	if ( IsKeyDown(KEY_EQUAL))
+	if ( IsKeyPressed(KEY_EQUAL))
 	{
-		mGameSpeed += 10.f * GetFrameTime();
+		mGameSpeed = std::min(mGameSpeed + 0.5f, 10.f);
 	}
 
 	if ( IsKeyPressed(KEY_ZERO))

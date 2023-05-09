@@ -1,7 +1,7 @@
 #include "food.hpp"
 
-const float kMeatSpoilageTime        = 15;
-const float kVegetableSpoilageTime   = 60;
+const float kMeatSpoilageTime        = 45;
+const float kVegetableSpoilageTime   = 120;
 const Color kVegetableColor          = {0, 255, 0, 100};
 const Color kMeatColor               = {255, 0, 0, 100};
 const int   kVegetableNutritionValue = 10;
@@ -53,7 +53,7 @@ void Food::Initialize()
 	else
 	{
 		mColor      = kMeatColor;
-		mBodyRadius = static_cast<float>(mNutritionValue) / 50.f;
+		mBodyRadius = static_cast<float>(mNutritionValue) / 25.f;
 	}
 
 	mPerceptionRadius = 0;

@@ -13,7 +13,7 @@ class Microbe : public Entity
 		eWandering, eFleeing, eChasing
 	};
 
-	const int kMicrobeNutritionValue = 25;
+	const int kMicrobeNutritionValue = 10;
 
 public:
 	explicit Microbe(Entity::Type type = Entity::eNone);
@@ -29,10 +29,10 @@ public:
 	void OnPerceptionCollisionEnter(Entity &other) override;
 	void OnDeath() override;
 
-	bool CanReproduce() const override { return mReproductionDelayTimer.IsElapsed() && SatedEnough(); };
+	bool CanReproduce() const override { return mReproductionDelayTimer.IsElapsed() && SatietyPercentage() >= 0.4f; };
 	void ResetReproductionTimer() { mReproductionDelayTimer.Reset(); }
 
-	int GetNutritionValue() const override { return mSatiety / 2 + kMicrobeNutritionValue; }
+	int GetNutritionValue() const override { return mSatiety / 8 + kMicrobeNutritionValue; }
 
 	std::string ToString() const override;
 
@@ -46,7 +46,7 @@ private:
 	void Reproduce(Microbe &other);
 	void Eat(Food &food);
 
-	void RecalculateMovementSpeed() { mCurrentMovementSpeed = mMovementSpeed * ( 1.25f - SatietyPercentage()); }
+	void RecalculateMovementSpeed() { mCurrentMovementSpeed = mMovementSpeed * ( 1.5f - SatietyPercentage()); }
 
 	float SatietyPercentage() const { return static_cast<float>(mSatiety) / static_cast<float>(mMaxSatiety); }
 	bool SatedEnough() const { return SatietyPercentage() >= 0.75f; }

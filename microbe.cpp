@@ -16,8 +16,8 @@ const int   kSatietyDropTime       = 5;
 const float kStarvationTimeToDeath = 30.f;
 const int   kStartingSatiety       = 10;
 
-const float kPredatorReproductionDelay = 30;
-const float kHerbivorousReproductionDelay = 15;
+const float kPredatorReproductionDelay    = 30;
+const float kHerbivorousReproductionDelay = 20;
 
 const unsigned char kDefaultMicrobeColorAlpha = 215;
 
@@ -30,15 +30,20 @@ const float rMaxMovementSpeed = rMinMovementSpeed * 1.5f;
 const float rMinRotationSpeed = 2;
 const float rMaxRotationSpeed = 4;
 
-const float rMinPerceptionRadius = 5;
-const float rMaxPerceptionRadius = 7.5f;
+const float rMinPerceptionRadius = 7.5f;
+const float rMaxPerceptionRadius = 12.5f;
 
-const float rMinBodyRadius = 0.75f;
-const float rMaxBodyRadius = 1;
+const float rMinBodyRadius = 0.5f;
+const float rMaxBodyRadius = 1.f;
 
 const float rMinChangeDirectionTime = 5;
 const float rMaxChangeDirectionTime = 15;
 
+const Color rLowHerbivorousColor  = {0, 128, 0, kDefaultMicrobeColorAlpha};
+const Color rHighHerbivorousColor = {32, 255, 128, kDefaultMicrobeColorAlpha};
+
+const Color rLowPredatorColor  = {128, 0, 0, kDefaultMicrobeColorAlpha};
+const Color rHighPredatorColor = {255, 32, 128, kDefaultMicrobeColorAlpha};
 
 Microbe::Microbe(Entity::Type type) :
 		Entity(Vector2Zero())
@@ -149,7 +154,8 @@ void Microbe::OnBodyCollisionEnter(Entity &other)
 			case ePredator:
 				if ( CanReproduce() && other.CanReproduce())
 				{
-					Reproduce(*dynamic_cast<Microbe *>(&other));
+					auto partner = dynamic_cast<Microbe *>(&other);
+					Reproduce(*partner);
 				}
 				break;
 			case eHerbivorous:
@@ -177,7 +183,6 @@ void Microbe::OnBodyCollisionEnter(Entity &other)
 				if ( CanReproduce() && other.CanReproduce())
 				{
 					auto partner = dynamic_cast<Microbe *>(&other);
-					Reproduce(*partner);
 					Reproduce(*partner);
 				}
 				break;
@@ -307,7 +312,8 @@ void Microbe::Initialize()
 
 	/* TIMERS */
 	mChangeDirectionTimer.SetDelay(GetRandomFloat(rMinChangeDirectionTime, rMaxChangeDirectionTime));
-	mReproductionDelayTimer.SetDelay(mType == eHerbivorous ? kHerbivorousReproductionDelay : kPredatorReproductionDelay);
+	mReproductionDelayTimer.SetDelay(
+			mType == eHerbivorous ? kHerbivorousReproductionDelay : kPredatorReproductionDelay);
 	mSatietyDropTimer.SetDelay(kSatietyDropTime);
 
 	mMaxSatiety = GetRandomValue(rMinSatiety, rMaxSatiety);
@@ -330,33 +336,20 @@ void Microbe::Initialize()
 
 
 	/* COLOR */
-	float     ratioR, ratioG, ratioB;
-	const int maxColorValue = 255;
 
-	float minR = mType == ePredator ? maxColorValue / 2 : 0;
-	float minG = mType == eHerbivorous ? maxColorValue / 2 : 0;
-	float minB = maxColorValue / 4;
-
-	float maxR = mType == ePredator ? maxColorValue : 0;
-	float maxG = mType == eHerbivorous ? maxColorValue : 0;
-	float maxB = maxColorValue / 2;
-
-	ratioR = static_cast<float>(GetRandomValue(minR, maxR));
-	ratioG = static_cast<float>(GetRandomValue(minG, maxG));
-	ratioB = static_cast<float>(GetRandomValue(minB, maxB));
-
-	const int chaosMinMax = 100;
-	auto      chaos       = static_cast<float>(GetRandomValue(-chaosMinMax, chaosMinMax));
-
-	float globalRatio = ratioR + ratioG + ratioB + chaos;
-	ratioR /= globalRatio;
-	ratioG /= globalRatio;
-	ratioB /= globalRatio;
-
-	uint8_t r, g, b;
-	r = static_cast<uint8_t>(ratioR * 255);
-	g = static_cast<uint8_t>(ratioG * 255);
-	b = static_cast<uint8_t>(ratioB * 255);
+	uint8_t r = 0, g = 0, b = 0;
+	if ( mType == eHerbivorous )
+	{
+		r = static_cast<uint8_t>(GetRandomValue(rLowHerbivorousColor.r, rHighHerbivorousColor.r));
+		g = static_cast<uint8_t>(GetRandomValue(rLowHerbivorousColor.g, rHighHerbivorousColor.g));
+		b = static_cast<uint8_t>(GetRandomValue(rLowHerbivorousColor.b, rHighHerbivorousColor.b));
+	}
+	else if ( mType == ePredator )
+	{
+		r = static_cast<uint8_t>(GetRandomValue(rLowPredatorColor.r, rHighPredatorColor.r));
+		g = static_cast<uint8_t>(GetRandomValue(rLowPredatorColor.g, rHighPredatorColor.g));
+		b = static_cast<uint8_t>(GetRandomValue(rLowPredatorColor.b, rHighPredatorColor.b));
+	}
 
 	mColor         = {r, g, b, kDefaultMicrobeColorAlpha};
 	mOriginalColor = mColor;

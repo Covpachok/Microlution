@@ -8,9 +8,9 @@
 
 EntityManager *EntityManager::mInstance = nullptr;
 
-const size_t kVegetablesSpawnAmount  = 300;
-const size_t kHerbivorousSpawnAmount = 64;
-const size_t kPredatorSpawnAmount    = 8;
+const size_t kVegetablesSpawnAmount  = 200;
+const size_t kHerbivorousSpawnAmount = 400;
+const size_t kPredatorSpawnAmount    = 60;
 
 const float kSpawnVegetableDelay = 8;
 
