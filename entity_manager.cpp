@@ -67,15 +67,12 @@ void EntityManager::Update(float delta, Grid &grid)
 		}
 		grid.CheckCollision(entity.get());
 	}
-
-	DeadEntitiesCleanup();
-
-	// Better to spawn constant amount of vegetables
-//	mVegetablesSpawnAmount = static_cast<int>(std::ceil(static_cast<float>(mHerbivorousCount) / 2.f));
 }
 
 void EntityManager::SpawnMicrobe(Microbe *newMicrobe)
 {
+	assert(newMicrobe != nullptr);
+
 	auto type = newMicrobe->GetType();
 	if ( type == Entity::eHerbivorous )
 	{
@@ -100,6 +97,8 @@ void EntityManager::SpawnVegetables(size_t amount)
 
 void EntityManager::SpawnMeat(Entity *from)
 {
+	assert(from != nullptr);
+
 	++mMeatCount;
 	mEntities.push_front(std::shared_ptr<Entity>(new Food(Entity::eMeat, from->GetPos(), from->GetNutritionValue())));
 }
@@ -117,12 +116,12 @@ void EntityManager::DeadEntitiesCleanup()
 			switch ( entity->GetType())
 			{
 				case Entity::ePredator:
-					SpawnMeat(entity.get());
 					--mPredatorCount;
+					++mPredatorsDiedCount;
 					break;
 				case Entity::eHerbivorous:
-					SpawnMeat(entity.get());
 					--mHerbivorousCount;
+					++mHerbivorousDiedCount;
 					break;
 				case Entity::eVegetable:
 					--mVegetableCount;
@@ -136,5 +135,46 @@ void EntityManager::DeadEntitiesCleanup()
 			mEntities.erase(toDelete);
 		}
 	}
+}
 
+std::string EntityManager::GetStatisticsString() const
+{
+	std::string result;
+	result += "#ALIVE";
+	result += "\n\tPREDATORS  : " + std::to_string(mPredatorCount);
+	result += "\n\tHERBIVOROUS: " + std::to_string(mHerbivorousCount);
+	result += "\n\tMEAT       : " + std::to_string(mMeatCount);
+	result += "\n\tVEGETABLES : " + std::to_string(mVegetableCount);
+	result += "\n#DIED";
+	result += "\n\tPREDATORS  : " + std::to_string(mPredatorsDiedCount);
+	result += "\n\tHERBIVOROUS: " + std::to_string(mHerbivorousDiedCount);
+
+	return result;
+}
+
+void EntityManager::Reset()
+{
+	mSpawnVegetablesTimer.Reset();
+
+	mVegetableCount       = 0;
+	mMeatCount            = 0;
+	mHerbivorousCount     = 0;
+	mPredatorCount        = 0;
+	mHerbivorousDiedCount = 0;
+	mPredatorsDiedCount   = 0;
+
+	mEntities.clear();
+
+	SpawnVegetables(kVegetablesSpawnAmount);
+	mVegetablesSpawnAmount = kVegetablesSpawnAmount;
+
+	for ( size_t i = 0; i < kPredatorSpawnAmount; ++i )
+	{
+		SpawnMicrobe(new Microbe(Entity::ePredator));
+	}
+
+	for ( size_t i = 0; i < kHerbivorousSpawnAmount; ++i )
+	{
+		SpawnMicrobe(new Microbe(Entity::eHerbivorous));
+	}
 }

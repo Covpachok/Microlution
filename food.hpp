@@ -13,20 +13,22 @@ public:
 	void Update(float delta) override;
 	void Draw() override;
 
+	// Food do nothing when collide with anything
 	void OnBodyCollisionEnter(Entity &other) override {}
+	// Food have no perception
 	void OnPerceptionCollisionEnter(Entity &other) override {}
 	void OnDeath() override;
 
 	int GetNutritionValue() const override { return mNutritionValue; }
 
 private:
+	// We have several constructors, so we get common functionality and place it in a separate method
 	void Initialize();
 
 private:
-	Color mColor = {0, 0, 0, 0};
+	int mNutritionValue = 0;
 
-	int mNutritionValue;
-
+	// Food will be destroyed over time
 	Timer mSpoilageTimer;
 };
 

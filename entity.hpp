@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <raylib.h>
 #include <string>
-#include "constants.hpp"
 
 class Entity
 {
@@ -16,8 +15,6 @@ public:
 	{
 		ePredator, eHerbivorous, eVegetable, eMeat, eNone, eAmount
 	};
-
-	constexpr static float DefaultBodySize = 1;
 
 public:
 	explicit Entity(Vector2 pos = {0, 0}, Type type = eNone) :
@@ -36,9 +33,11 @@ public:
 
 	float GetBodyRadius() const { return mBodyRadius; }
 	float GetBodySize() const { return mBodyRadius * 2; }
+	// Food have no perception radius
 	float GetPerceptionRadius() const { return mPerceptionRadius; }
 
-	virtual int GetNutritionValue() const = 0;virtual void OnDeath() = 0;
+	virtual int GetNutritionValue() const = 0;
+	virtual void OnDeath() = 0;
 
 	void Kill()
 	{
@@ -46,17 +45,19 @@ public:
 		OnDeath();
 	}
 
-
 	bool IsDead() const { return mIsDead; }
 
+	// Food can't reproduce
 	virtual bool CanReproduce() const { return false; };
 
 	virtual std::string ToString() const;
 
 protected:
+	Color mColor = {0, 0, 0, 0};
+
 	Type mType = eNone;
 
-	Vector2 mPos;
+	Vector2 mPos = {0, 0};
 
 	float mPerceptionRadius = 4;
 	float mBodyRadius       = 0.75f;

@@ -31,9 +31,13 @@ private:
 
 	TextureHandler mTextureHandler;
 
-	bool mPause;
+	Font mDebugFont;
 
-	float mGameSpeed = 1.f;
+	class Entity *mDebugChosenEntity = nullptr;
+
+	float mGameSpeed     = 1.f;
+	bool  mPause         = false;
+	bool  mDrawDebugText = false;
 };
 
 

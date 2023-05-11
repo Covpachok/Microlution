@@ -33,20 +33,19 @@ public:
 	// however EntityManager can also handle this, so idk
 	EntityList &GetEntityList() { return mEntities; }
 
-	size_t GetVegetableCount() const { return mVegetableCount; }
-	size_t GetMeatCount() const { return mMeatCount; }
-	size_t GetHerbivorousCount() const { return mHerbivorousCount; }
-	size_t GetPredatorCount() const { return mPredatorCount; }
-
-private:
-	// Randomly spawns vegetable
-	void SpawnVegetables(size_t amount);
-
 	// Meat can spawn only when microbe dies, also it have nutrition value of dead microbe
 	void SpawnMeat(Entity *from);
 
 	// Destroys dead entities
 	void DeadEntitiesCleanup();
+
+	std::string GetStatisticsString() const;
+
+	void Reset();
+
+private:
+	// Randomly spawns vegetable
+	void SpawnVegetables(size_t amount);
 
 private:
 	EntityList mEntities;
@@ -57,6 +56,9 @@ private:
 	size_t mMeatCount        = 0;
 	size_t mHerbivorousCount = 0;
 	size_t mPredatorCount    = 0;
+
+	size_t mPredatorsDiedCount   = 0;
+	size_t mHerbivorousDiedCount = 0;
 
 	Timer mSpawnVegetablesTimer;
 };

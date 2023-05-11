@@ -1,11 +1,16 @@
 #include "food.hpp"
+#include "constants.hpp"
 
-const float kMeatSpoilageTime        = 45;
-const float kVegetableSpoilageTime   = 120;
-const Color kVegetableColor          = {0, 255, 0, 100};
-const Color kMeatColor               = {255, 0, 0, 100};
-const int   kVegetableNutritionValue = 10;
+const float kMeatSpoilageTime      = 45;
+const float kVegetableSpoilageTime = 120;
 
+const Color kVegetableColor = {0, 255, 0, 100};
+const Color kMeatColor      = {255, 0, 0, 100};
+
+const int kVegetableNutritionValue = 10;
+
+const float kVegetableBodyRadius    = 0.5f;
+const float kMeatBodyRadiusModifier = 1 / 25.f;
 
 Food::Food() :
 		mNutritionValue(kVegetableNutritionValue)
@@ -45,15 +50,15 @@ void Food::OnDeath()
 
 void Food::Initialize()
 {
-	if(mType == Entity::eVegetable)
+	if ( mType == Entity::eVegetable )
 	{
 		mColor      = kVegetableColor;
-		mBodyRadius = 0.5f;
+		mBodyRadius = kVegetableBodyRadius;
 	}
 	else
 	{
 		mColor      = kMeatColor;
-		mBodyRadius = static_cast<float>(mNutritionValue) / 25.f;
+		mBodyRadius = static_cast<float>(mNutritionValue) * kMeatBodyRadiusModifier;
 	}
 
 	mPerceptionRadius = 0;

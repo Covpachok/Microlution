@@ -67,10 +67,9 @@ private:
 	void ReduceSatiety(int value) { mSatiety = std::min(mSatiety - value, 0); }
 
 protected:
-	/* ==== MOVEMENT ==== */
+	/* MOVEMENT */
 	Vector2 mLookingDirection = {1, 0};
 	Vector2 mTargetDirection  = {0, 1};
-	Vector2 mNewDirection     = {0, 0};
 
 	Vector2 mVelocity             = {0, 0};
 	Vector2 mAcceleration         = {0, 0};
@@ -83,32 +82,26 @@ protected:
 	float mTargetRotation    = 0.f;
 
 	bool mShouldMove = true;
-	/* ================== */
 
+
+	/* COLLISIONS */
 	Entity *mPerceptionCollidedEntity = nullptr;
 	float   mPerceptionCollidedDistance = 1000;
 
 	MovementState mMovementState = MovementState::eWandering;
 
-	/* ==== STATS ==== */
-	Color mColor         = WHITE;
-	Color mOriginalColor = WHITE;
 
-	/* FOOD */
+	/* OTHER */
 	int mSatiety    = 0;
 	int mMaxSatiety = 0;
 
-	float mStarvationTime = 0;
-	/* =============== */
+	float mTimeAlive = 0;
+	size_t mChildrensAmount = 0;
 
-
-	/* ==== UTILITY STUFF ==== */
 	Timer mChangeDirectionTimer;
 	Timer mSatietyDropTimer;
 	Timer mReproductionDelayTimer;
-
-	bool mPassBoundsPrevFrame = false;
-	/* ======================= */
+	Timer mStarvationTimer;
 };
 
 

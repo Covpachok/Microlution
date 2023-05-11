@@ -11,18 +11,20 @@ public:
 
 	void Update(float delta)
 	{
-		mLifeTime += delta;
+		mTime += delta;
 	};
 
-	bool IsElapsed() const { return mLifeTime >= mDelay; }
+	bool IsElapsed() const { return mTime >= mDelay; }
 
-	void Reset() { mLifeTime = 0; }
+	void Reset() { mTime = 0; }
+
+	float GetTime() const { return mTime; }
 
 	void SetDelay(float newDelay) { mDelay = newDelay; }
 
 private:
 	float mDelay;
-	float mLifeTime = 0;
+	float mTime = 0;
 };
 
 #endif //MICROLUTION_TIMER_HPP

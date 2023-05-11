@@ -10,15 +10,23 @@
 
 using namespace std;
 
-const int   kMinSatiety            = 0;
-const int   kSatietyDropValue      = 2;
-const int   kSatietyDropTime       = 5;
-const float kStarvationTimeToDeath = 30.f;
-const int   kStartingSatiety       = 10;
+const int kMinSatiety = 0;
+
+// Satiety drops by DropValue each DropTime seconds
+const int   kSatietyDropValue = 1;
+const float kSatietyDropTime  = 2.5f;
+
+// When satiety = minSatiety, timer of starvation starts ticking,
+// when timer ticks 30 seconds, microbe is dead
+const float kStarvationTimeToDeath = 20.f;
+
+// Satiety each microbe starts with
+const int kStartingSatiety = 20;
 
 const float kPredatorReproductionDelay    = 30;
 const float kHerbivorousReproductionDelay = 20;
 
+// Microbes slightly transparent
 const unsigned char kDefaultMicrobeColorAlpha = 215;
 
 /* RANDOMIZATION CONSTANTS */
@@ -96,7 +104,10 @@ void Microbe::ChangeDirection(const Vector2 &newDirection)
 
 void Microbe::Update(float delta)
 {
+	mTimeAlive += delta;
+
 	mReproductionDelayTimer.Update(delta);
+
 
 	mChangeDirectionTimer.Update(delta);
 	if ( mChangeDirectionTimer.IsElapsed())
@@ -105,7 +116,7 @@ void Microbe::Update(float delta)
 		mChangeDirectionTimer.SetDelay(GetRandomFloat(rMinChangeDirectionTime, rMaxChangeDirectionTime));
 	}
 
-	/** FOOD RELATED */
+
 	mSatietyDropTimer.Update(delta);
 	if ( mSatietyDropTimer.IsElapsed())
 	{
@@ -113,27 +124,36 @@ void Microbe::Update(float delta)
 		mSatietyDropTimer.Reset();
 	}
 
+
 	if ( mSatiety == kMinSatiety )
 	{
-		mStarvationTime += delta;
+		mStarvationTimer.Update(delta);
 	}
 	else
 	{
-		mStarvationTime = 0;
+		mStarvationTimer.Reset();
 	}
 
-	if ( mStarvationTime >= kStarvationTimeToDeath )
+	if ( mStarvationTimer.IsElapsed())
 	{
 		Kill();
+		// Microbe is now dead, so there is no need to do anything
 		return;
 	}
 
+
+	// Movement speed dependent on satiety percentage, so we need to recalculate
+	// speed each frame (actually only when satiety changes)
 	RecalculateMovementSpeed();
 
-	/** MOVEMENT */
+
 	Rotate(delta);
 	Move(delta);
 
+
+	// Each time entity enters perception radius of the microbe, microbe stores distance between itself and other entity,
+	// but each frame all the entities are updated, so we need to reset this value to allow microbe to choose new nearest
+	// entity to chase for/flee from.
 	mPerceptionCollidedDistance = 10000;
 	mMovementState              = MovementState::eWandering;
 }
@@ -228,9 +248,19 @@ void Microbe::OnPerceptionCollisionEnter(Entity &other)
 
 std::string Microbe::ToString() const
 {
-	string ret = "Microbe - " + Entity::ToString() + " food: " + to_string(mSatiety) + "/" + to_string(mMaxSatiety) +
-	             " starvation:" +
-	             to_string(mStarvationTime) + "/" + to_string(kStarvationTimeToDeath);
+	string stats;
+	std::string canReproduce = CanReproduce() ? "YES" : "NO";
+	stats += "\n\t\tMovement speed   : " + to_string(mMovementSpeed);
+	stats += "\n\t\tRotation speed   : " + to_string(mRotationSpeed);
+	stats += "\n\t\tBody radius      : " + to_string(mBodyRadius);
+	stats += "\n\t\tPerception radius: " + to_string(mPerceptionRadius);
+	stats += "\n\t\tSatiety value    : " + to_string(mSatiety) + "/" + to_string(mMaxSatiety);
+	stats += "\n\t\tStarvation time  : " + to_string(mStarvationTimer.GetTime());
+	stats += "\n\t\tCan reproduce    : " + canReproduce;
+	stats += "\n\t\tChildrens amount : " + to_string(mChildrensAmount);
+	stats += "\n\t\tTime alive       : " + to_string(static_cast<int>(floor(mTimeAlive))) + "s";
+
+	string ret = "MICROBE: " + Entity::ToString() + stats;
 
 	return ret;
 }
@@ -268,7 +298,9 @@ void Microbe::Rotate(float delta)
 
 void Microbe::OnDeath()
 {
-	mColor.a = 20;
+	mColor.a = 0;
+
+	EntityManager::GetInstance().SpawnMeat(this);
 }
 
 void Microbe::Draw()
@@ -315,6 +347,7 @@ void Microbe::Initialize()
 	mReproductionDelayTimer.SetDelay(
 			mType == eHerbivorous ? kHerbivorousReproductionDelay : kPredatorReproductionDelay);
 	mSatietyDropTimer.SetDelay(kSatietyDropTime);
+	mStarvationTimer.SetDelay(kStarvationTimeToDeath);
 
 	mMaxSatiety = GetRandomValue(rMinSatiety, rMaxSatiety);
 	mSatiety    = kStartingSatiety;
@@ -351,8 +384,7 @@ void Microbe::Initialize()
 		b = static_cast<uint8_t>(GetRandomValue(rLowPredatorColor.b, rHighPredatorColor.b));
 	}
 
-	mColor         = {r, g, b, kDefaultMicrobeColorAlpha};
-	mOriginalColor = mColor;
+	mColor = {r, g, b, kDefaultMicrobeColorAlpha};
 }
 
 void Microbe::OnOutOfBounds()
@@ -419,6 +451,8 @@ void Microbe::Reproduce(Microbe &other)
 	child->mColor            = childColor;
 
 	EntityManager::GetInstance().SpawnMicrobe(child);
+
+	++mChildrensAmount;
 }
 
 void Microbe::Eat(Food &food)

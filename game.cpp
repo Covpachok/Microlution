@@ -19,7 +19,11 @@ Game::Game() :
 
 	mTextureHandler.LoadTexture("../assets/microbe_texture.png");
 
-	mGrid.RegisterEntities(mEntityManager.GetEntityList());
+	mDebugFont = LoadFontEx("../assets/monogram.ttf", 128, NULL, 0);
+	if ( mDebugFont.glyphCount <= 0 )
+	{
+		mDebugFont = GetFontDefault();
+	}
 }
 
 Game::~Game()
@@ -47,18 +51,30 @@ void Game::HandleInput()
 		auto       entities = mGrid.GetEntities(GetMousePosition());
 		for ( auto &entity: entities )
 		{
-			if ( entity == nullptr )
+			if ( entity == nullptr || !(entity->GetType() == Entity::ePredator || entity->GetType() == Entity::eHerbivorous))
 			{
 				continue;
 			}
-			DEBUG_LOG_INFO(entity->ToString());
-
+			mDebugChosenEntity = entity;
+			DEBUG_LOG_INFO(mDebugChosenEntity->ToString());
 		}
 	}
 
 	if ( IsKeyPressed(KEY_SPACE))
 	{
 		mPause = !mPause;
+	}
+
+	if ( IsKeyPressed(KEY_GRAVE))
+	{
+		mDrawDebugText = !mDrawDebugText;
+	}
+
+	if ( IsKeyPressed(KEY_DELETE))
+	{
+		mEntityManager.Reset();
+		mGrid.ClearGrid();
+		mDebugChosenEntity = nullptr;
 	}
 
 	using namespace GlobalDebug;
@@ -137,6 +153,13 @@ void Game::Update()
 {
 	float delta = GetFrameTime() * mGameSpeed;
 	mEntityManager.Update(delta, mGrid);
+
+	if ( mDebugChosenEntity != nullptr && mDebugChosenEntity->IsDead())
+	{
+		mDebugChosenEntity = nullptr;
+	}
+
+	mEntityManager.DeadEntitiesCleanup();
 }
 
 void Game::Draw()
@@ -157,17 +180,19 @@ void Game::Draw()
 		entity->Draw();
 	}
 
-	std::string debugText =
-			            "E:" + to_string(entityList.size()) + "\nH:" + to_string(mEntityManager.GetHerbivorousCount()) +
-			            "\nP:" +
-			            to_string(mEntityManager.GetPredatorCount()) + "\nV:" +
-			            to_string(mEntityManager.GetVegetableCount()) + "\nM:" +
-			            to_string(mEntityManager.GetMeatCount());
+	if ( mDrawDebugText )
+	{
+		DrawTextEx(mDebugFont, mEntityManager.GetStatisticsString().c_str(), {1, 20}, 25, 1, BLACK);
 
-	DrawText(debugText.c_str(), 1, 20, 20, BLACK);
+		if ( mDebugChosenEntity != nullptr )
+		{
+			DrawTextEx(mDebugFont, mDebugChosenEntity->ToString().c_str(), {1, Constants::ScreenHeight / 2 - 50}, 25, 1,
+			           {200, 0, 200, 255});
+		}
+	}
 
-	DrawText(to_string(mGameSpeed).c_str(), Constants::ScreenWidth - 50, 1, 20, BLUE);
-
+	std::string gameSpeedText = TextFormat("%.1f", mGameSpeed);
+	DrawText(gameSpeedText.c_str(), Constants::ScreenWidth - MeasureText(gameSpeedText.c_str(), 25), 1, 20, BLUE);
 	DrawFPS(1, 1);
 
 	EndDrawing();

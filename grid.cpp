@@ -46,52 +46,10 @@ void Grid::RegisterEntity(Entity *entity)
 
 void Grid::RegisterEntities(std::list<std::shared_ptr<Entity>> &entities)
 {
-	ClearRegisteredEntities();
+	ClearGrid();
 	for ( auto &entity: entities )
 	{
 		RegisterEntity(entity.get());
-
-#if 0
-		const float bodyRadius = entity->GetBodyRadius();
-		int         bodySize     = 1;
-
-		Vector2 offset;
-		IntVec2 gridPos;
-		size_t  gridX, gridY;
-
-		for ( int y = -bodySize; y <= bodySize; ++y )
-		{
-			for ( int x = -bodySize; x <= bodySize; ++x )
-			{
-				offset  = {static_cast<float>(x) * bodyRadius, static_cast<float>(y) * bodyRadius};
-				gridPos = ToGridPosition(Vector2Add(entity->GetPos(), offset));
-
-				if ( gridPos.x < 0 )
-				{
-					gridPos.x = Constants::GridWidth - 1;
-				}
-				else if ( gridPos.x >= Constants::GridWidth )
-				{
-					gridPos.x = 0;
-				}
-
-				if ( gridPos.y < 0 )
-				{
-					gridPos.y = Constants::GridHeight - 1;
-				}
-				else if ( gridPos.y >= Constants::GridHeight )
-				{
-					gridPos.y = 0;
-				}
-
-				gridX = static_cast<size_t>(gridPos.x);
-				gridY = static_cast<size_t>(gridPos.y);
-
-				mGrid[gridY][gridX].insert(entity.get());
-			}
-		}
-#endif
-
 	}
 }
 
@@ -122,18 +80,6 @@ const Grid::EntitySet &Grid::GetEntities(const Vector2 &pos)
 
 	assert(gridPos.y >= 0 && gridPos.y < Constants::GridHeight);
 	assert(gridPos.x >= 0 && gridPos.x < Constants::GridWidth);
-
-#if 0
-	for ( auto &entity: mGrid[resY][resX] )
-	{
-		if ( entity == nullptr )
-		{
-			continue;
-		}
-
-		std::cout << "Collided" << "\n";
-	}
-#endif
 
 	return mGrid[resY][resX];
 }
@@ -209,7 +155,7 @@ void Grid::Draw()
 	}
 }
 
-void Grid::ClearRegisteredEntities()
+void Grid::ClearGrid()
 {
 	for ( auto &row: mGrid )
 	{

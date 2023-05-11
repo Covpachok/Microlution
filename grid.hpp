@@ -17,16 +17,16 @@ class Entity;
 class Grid
 {
 public:
+	// List of unique values
 	using EntitySet = std::set<Entity *>;
 
 public:
 	Grid();
 
-	// RegisterEntity only one at a time
 	void RegisterEntities(std::list<std::shared_ptr<Entity>> &entities);
 	void RegisterEntity(Entity *entity);
 
-	void ClearRegisteredEntities();
+	void ClearGrid();
 
 	const EntitySet &GetEntities(const Vector2 &pos);
 	void CheckCollision(Entity *checkEntity);
