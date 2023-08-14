@@ -21,7 +21,7 @@ public:
 
 private:
 	void HandleInput();
-	void Update();
+	void Update(float delta);
 	void Draw();
 
 private:

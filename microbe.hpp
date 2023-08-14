@@ -32,9 +32,11 @@ public:
 	bool CanReproduce() const override { return mReproductionDelayTimer.IsElapsed() && SatietyPercentage() >= 0.4f; };
 	void ResetReproductionTimer() { mReproductionDelayTimer.Reset(); }
 
-	int GetNutritionValue() const override { return mSatiety / 8 + kMicrobeNutritionValue; }
+	int GetNutritionValue() const override { return mSatiety / 10 + kMicrobeNutritionValue; }
 
 	std::string ToString() const override;
+
+	void Push(const Vector2 &from);
 
 private:
 	void Initialize();
@@ -57,7 +59,7 @@ private:
 		return (( mType == eHerbivorous && other == eVegetable ) ||
 		        ( mType == ePredator && other == eMeat ) ||
 		        ( mType == ePredator && other == eHerbivorous )) &&
-		       !SatedEnough() && mMovementState != MovementState::eFleeing;
+		       !SatedEnough() && (mMovementState != MovementState::eFleeing || SatietyPercentage() < 0.1);
 	}
 	bool ShouldReproduceWith(Type other) const
 	{

@@ -18,39 +18,39 @@ const float kSatietyDropTime  = 2.5f;
 
 // When satiety = minSatiety, timer of starvation starts ticking,
 // when timer ticks 30 seconds, microbe is dead
-const float kStarvationTimeToDeath = 20.f;
+const float kStarvationTimeToDeath = 10.f;
 
 // Satiety each microbe starts with
-const int kStartingSatiety = 20;
+const int kStartingSatiety = 50;
 
-const float kPredatorReproductionDelay    = 30;
-const float kHerbivorousReproductionDelay = 20;
+const float kPredatorReproductionDelay    = 20;
+const float kHerbivorousReproductionDelay = 10;
 
 // Microbes slightly transparent
 const unsigned char kDefaultMicrobeColorAlpha = 215;
 
 /* RANDOMIZATION CONSTANTS */
-const int rMinSatiety = 75;
-const int rMaxSatiety = 125;
+const int rMinSatiety = 50;
+const int rMaxSatiety = 200;
 
 const float rMinMovementSpeed = Constants::CellSize * 2;
-const float rMaxMovementSpeed = rMinMovementSpeed * 1.5f;
-const float rMinRotationSpeed = 2;
+const float rMaxMovementSpeed = rMinMovementSpeed * 2;
+const float rMinRotationSpeed = 1.5f;
 const float rMaxRotationSpeed = 4;
 
-const float rMinPerceptionRadius = 7.5f;
-const float rMaxPerceptionRadius = 12.5f;
+const float rMinPerceptionRadius = 5;
+const float rMaxPerceptionRadius = 15;
 
 const float rMinBodyRadius = 0.5f;
-const float rMaxBodyRadius = 1.f;
+const float rMaxBodyRadius = 1;
 
 const float rMinChangeDirectionTime = 5;
 const float rMaxChangeDirectionTime = 15;
 
-const Color rLowHerbivorousColor  = {0, 128, 0, kDefaultMicrobeColorAlpha};
+const Color rLowHerbivorousColor  = {0, 64, 0, kDefaultMicrobeColorAlpha};
 const Color rHighHerbivorousColor = {32, 255, 128, kDefaultMicrobeColorAlpha};
 
-const Color rLowPredatorColor  = {128, 0, 0, kDefaultMicrobeColorAlpha};
+const Color rLowPredatorColor  = {64, 0, 0, kDefaultMicrobeColorAlpha};
 const Color rHighPredatorColor = {255, 32, 128, kDefaultMicrobeColorAlpha};
 
 Microbe::Microbe(Entity::Type type) :
@@ -158,13 +158,24 @@ void Microbe::Update(float delta)
 	mMovementState              = MovementState::eWandering;
 }
 
+void Microbe::Push(const Vector2 &from)
+{
+	mPos = Vector2Add(mPos, Vector2Scale(Vector2Normalize(Vector2Subtract(mPos, from)), 0.1f));
+	OnOutOfBounds();
+}
+
 void Microbe::OnBodyCollisionEnter(Entity &other)
 {
+	auto* otherMicrobe = dynamic_cast<Microbe*>(&other);
+
 	// Avoid stacking of several microbes on each other
 	if ( other.GetType() == Entity::ePredator || other.GetType() == Entity::eHerbivorous )
 	{
-		mPos = Vector2Add(mPos, Vector2Scale(Vector2Normalize(Vector2Subtract(mPos, other.GetPos())), 0.5f));
-		OnOutOfBounds();
+		Push(other.GetPos());
+		if(otherMicrobe)
+		{
+			otherMicrobe->Push(mPos);
+		}
 	}
 
 	if ( mType == Entity::ePredator )
@@ -174,8 +185,7 @@ void Microbe::OnBodyCollisionEnter(Entity &other)
 			case ePredator:
 				if ( CanReproduce() && other.CanReproduce())
 				{
-					auto partner = dynamic_cast<Microbe *>(&other);
-					Reproduce(*partner);
+					Reproduce(*otherMicrobe);
 				}
 				break;
 			case eHerbivorous:
@@ -202,8 +212,7 @@ void Microbe::OnBodyCollisionEnter(Entity &other)
 			case eHerbivorous:
 				if ( CanReproduce() && other.CanReproduce())
 				{
-					auto partner = dynamic_cast<Microbe *>(&other);
-					Reproduce(*partner);
+					Reproduce(*otherMicrobe);
 				}
 				break;
 			case eVegetable:
@@ -248,7 +257,7 @@ void Microbe::OnPerceptionCollisionEnter(Entity &other)
 
 std::string Microbe::ToString() const
 {
-	string stats;
+	string      stats;
 	std::string canReproduce = CanReproduce() ? "YES" : "NO";
 	stats += "\n\t\tMovement speed   : " + to_string(mMovementSpeed);
 	stats += "\n\t\tRotation speed   : " + to_string(mRotationSpeed);
@@ -413,8 +422,8 @@ void Microbe::Reproduce(Microbe &other)
 	other.ResetReproductionTimer();
 	ResetReproductionTimer();
 
-	other.ReduceSatiety(kMicrobeNutritionValue);
-	ReduceSatiety(kMicrobeNutritionValue);
+	other.ReduceSatiety(kMicrobeNutritionValue * 2);
+	ReduceSatiety(kMicrobeNutritionValue * 2);
 
 	// Inheritable stats
 	const float rMovementSpeedDiff = ( rMaxMovementSpeed - rMinMovementSpeed ) / 10.f;
@@ -449,6 +458,7 @@ void Microbe::Reproduce(Microbe &other)
 	child->mMaxSatiety       = childMaxSatiety;
 	child->mBodyRadius       = childBodyRadius;
 	child->mColor            = childColor;
+	child->mSatiety          = kMicrobeNutritionValue * 2;
 
 	EntityManager::GetInstance().SpawnMicrobe(child);
 

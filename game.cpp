@@ -10,12 +10,15 @@
 
 using namespace std;
 
+const float kFixedTimestep = 2.0 / 60.0;
+
 Game::Game() :
 		mPause(false)
 {
 	using namespace Constants;
 
 	InitWindow(ScreenWidth, ScreenHeight, "Microlution");
+	SetTargetFPS(60);
 
 	mTextureHandler.LoadTexture("../assets/microbe_texture.png");
 
@@ -33,14 +36,20 @@ Game::~Game()
 
 void Game::Start()
 {
+	float delta = 0;
 	while ( !WindowShouldClose())
 	{
-		if ( !mPause )
-		{
-			Update();
-		}
 		Draw();
 		HandleInput();
+		if ( !mPause )
+		{
+			delta += GetFrameTime() * mGameSpeed;
+			while ( delta >= kFixedTimestep )
+			{
+				delta -= kFixedTimestep;
+				Update(kFixedTimestep);
+			}
+		}
 	}
 }
 
@@ -51,7 +60,8 @@ void Game::HandleInput()
 		auto       entities = mGrid.GetEntities(GetMousePosition());
 		for ( auto &entity: entities )
 		{
-			if ( entity == nullptr || !(entity->GetType() == Entity::ePredator || entity->GetType() == Entity::eHerbivorous))
+			if ( entity == nullptr ||
+			     !( entity->GetType() == Entity::ePredator || entity->GetType() == Entity::eHerbivorous ))
 			{
 				continue;
 			}
@@ -149,9 +159,8 @@ void Game::HandleInput()
 	}
 }
 
-void Game::Update()
+void Game::Update(float delta)
 {
-	float delta = GetFrameTime() * mGameSpeed;
 	mEntityManager.Update(delta, mGrid);
 
 	if ( mDebugChosenEntity != nullptr && mDebugChosenEntity->IsDead())

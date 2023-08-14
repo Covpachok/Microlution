@@ -19,20 +19,21 @@ bool InsideCircle(Vector2 center, Vector2 tile, float radius)
 
 void Grid::RegisterEntity(Entity *entity)
 {
-	Vector2 pos      = entity->GetPos();
-	float   bodySize = entity->GetBodySize(); // Actually is a radius
+	const Vector2 pos      = entity->GetPos();
+	float         bodySize = entity->GetBodySize(); // Actually is a radius
 
-	Vector2 entityConvertedPos = {pos.x / Constants::CellSize, pos.y / Constants::CellSize};
+	const Vector2 entityConvertedPos = {pos.x / Constants::CellSize, pos.y / Constants::CellSize};
+	const Vector2 entityFlooredPos   = {floor(entityConvertedPos.x), floor(entityConvertedPos.y)};
 
-	int       size = static_cast<int>(round(bodySize));
+	const int size = static_cast<int>(round(bodySize));
 	for ( int y    = -size; y <= size; ++y )
 	{
 		for ( int x = -size; x <= size; ++x )
 		{
 			IntVec2 gridPos = ToGridPosition(pos) + IntVec2{x, y};
 
-			Vector2 relativePos = {floor(entityConvertedPos.x + static_cast<float>(x)) + 0.5f,
-			                       floor(entityConvertedPos.y + static_cast<float>(y)) + 0.5f};
+			const Vector2 relativePos = {entityFlooredPos.x + static_cast<float>(x) + 0.5f,
+			                             entityFlooredPos.y + static_cast<float>(y) + 0.5f};
 
 			if ( InsideCircle(entityConvertedPos, relativePos, bodySize))
 			{
@@ -86,10 +87,22 @@ const Grid::EntitySet &Grid::GetEntities(const Vector2 &pos)
 
 void Grid::CheckCollision(Entity *checkEntity)
 {
-	IntVec2 gridPos    = ToGridPosition(checkEntity->GetPos());
-	int     gridRadius = ceil(checkEntity->GetPerceptionRadius());
+	if ( checkEntity->GetPerceptionRadius() <= 0 )
+	{
+		return;
+	}
+
+	const IntVec2 gridPos    = ToGridPosition(checkEntity->GetPos());
+	const int     gridRadius = ceil(checkEntity->GetPerceptionRadius());
 
 	IntVec2 currentPos;
+
+	const float   checkPerception = checkEntity->GetPerceptionRadius() * Constants::CellSize;
+	const float   checkBody       = checkEntity->GetBodyRadius() * Constants::CellSize;
+	const Vector2 checkPos        = checkEntity->GetPos();
+
+	Vector2 otherPos;
+	float   otherBody;
 
 	for ( int y = -gridRadius; y <= gridRadius; ++y )
 	{
@@ -105,17 +118,17 @@ void Grid::CheckCollision(Entity *checkEntity)
 					continue;
 				}
 
-				if ( checkEntity->GetPerceptionRadius() > 0 &&
-				     CheckCollisionCircles(otherEntity->GetPos(), otherEntity->GetBodyRadius() * Constants::CellSize,
-				                           checkEntity->GetPos(),
-				                           checkEntity->GetPerceptionRadius() * Constants::CellSize))
+				otherPos  = otherEntity->GetPos();
+				otherBody = otherEntity->GetBodyRadius() * Constants::CellSize;
+
+				if ( CheckCollisionCircles(otherPos, otherBody,
+				                           checkPos, checkPerception))
 				{
 					checkEntity->OnPerceptionCollisionEnter(*otherEntity);
 				}
 
-				if ( CheckCollisionCircles(otherEntity->GetPos(), otherEntity->GetBodyRadius() * Constants::CellSize,
-				                           checkEntity->GetPos(),
-				                           checkEntity->GetBodyRadius() * Constants::CellSize))
+				if ( CheckCollisionCircles(otherPos, otherBody,
+				                           checkPos, checkBody))
 				{
 					checkEntity->OnBodyCollisionEnter(*otherEntity);
 				}
